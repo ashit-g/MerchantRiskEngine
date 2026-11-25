@@ -1,34 +1,47 @@
 # MerchantRiskEngine
 
-An ML lab project for forecasting merchant risk from marketplace activity and explaining which signals drive each score.
+MerchantRiskEngine is an ML lab project for marketplace fulfilment monitoring. It helps an operations team identify which sellers are likely to have a high late-delivery rate next month, see which products or categories are contributing to recent delays, and decide where to investigate first.
 
-## Dataset recommendation
+## Prediction target
 
-Use the [Brazilian E-Commerce Public Dataset by Olist](https://www.kaggle.com/datasets/olistbr/brazilian-ecommerce). It contains about 100,000 anonymised orders from 2016–2018. For the main lab experiment, score **observed delivery risk**. At each month-end, predict whether a seller's share of late deliveries will meet or exceed a fixed threshold in the next calendar month. Use the promised delivery date to assign orders to a target month and compare actual and promised calendar dates to identify late deliveries. Start with single-seller orders and valid delivery timestamps. Report coverage and exclusions, including cancellations, missing timestamps and multi-seller orders. Check the usable row and positive counts before fixing cohort-size and label thresholds. If monthly coverage is too thin, predict late delivery per order and aggregate the predictions for the merchant dashboard.
+At the end of each calendar month, score each seller with sufficient historical activity. The model estimates the probability that **at least 20% of the seller's eligible deliveries in the next promised-delivery month will arrive late**.
 
-A preliminary check of the official orders and items files found 81,050 single-seller orders with valid actual and estimated delivery dates for promised months April 2017 through July 2018. With at least five observed deliveries in the target month and a late-rate cutoff of at least 20%, there are 4,103 eligible seller-months across 890 sellers, including 523 positives (12.7%). These counts cover 79.6% of the deliveries in that sample and precede historical-feature eligibility and time-split checks. The five-delivery rule describes which outcomes can be evaluated reliably. At scoring time, use only historical volume to assess whether there is enough data to score a seller.
+- Assign each order to a target month using its estimated delivery date. An order is late when its actual delivery date falls after its estimated delivery date.
+- Evaluate single-seller orders with a valid estimated delivery date and a completed delivery observed within 30 calendar days after the target month ends. A seller-month needs at least five eligible deliveries to get a label. Report excluded orders and seller-months alongside the metrics.
+- Determine scoring eligibility from historical activity available at month-end. The five-delivery requirement applies to evaluation outcomes once they mature.
+- Build the score from historical orders, completed deliveries and reviews available on the scoring date. The target measures late delivery among observed completed deliveries. Future cancellations, undelivered orders and credit delinquency are outside this target.
 
-The project proposal and presenter guide describe a different endpoint: an instalment reaching 30+ days past due within 60 days. Olist has no linked loan repayment or return records. To retain that endpoint, use a documented, reproducible simulation with explicit financing and repayment assumptions. [Home Credit Default Risk](https://www.kaggle.com/competitions/home-credit-default-risk/data) provides optional calibration via `installments_payments.csv` and `POS_CASH_balance.csv`. The competition data requires accepting Kaggle's rules. Its applicant default rate is a different quantity from the prevalence of delinquent merchant-months. For a project centered on observed borrower default, [Home Credit Credit Risk Model Stability](https://www.kaggle.com/c/home-credit-credit-risk-model-stability/data) provides loan-level labels and time indices.
+An initial profile of the official Olist files for promised months April 2017 through July 2018 found 80,887 eligible deliveries before the five-delivery minimum. After applying the minimum, 4,098 seller-months across 890 sellers remain, with 510 positive labels (12.4%). They represent 79.6% of the eligible deliveries in that period. These are dataset counts before historical feature and time-split checks.
 
-## What to download first
+## Inputs and merchant profile
 
-Download the Olist archive and extract it locally. Start with these three CSVs:
+Download the [Brazilian E-Commerce Public Dataset by Olist](https://www.kaggle.com/datasets/olistbr/brazilian-ecommerce) and extract it locally.
 
-| CSV | Fields and role |
+| File | What it provides |
 | --- | --- |
-| `olist_orders_dataset.csv` | `order_id`, purchase date, estimated delivery date and actual delivery date. Supplies the outcome and event timing. |
-| `olist_order_items_dataset.csv` | `order_id`, `seller_id`, item ID, price and freight. Supplies the order-to-seller link and transaction features. |
-| `olist_order_reviews_dataset.csv` | `order_id`, review score and response timestamp. Supplies historical customer feedback. |
+| `olist_orders_dataset.csv` | Order, purchase, estimated delivery and actual delivery dates |
+| `olist_order_items_dataset.csv` | Order-to-seller and order-to-product mapping, price and freight |
+| `olist_order_reviews_dataset.csv` | Review scores and timestamps for historical customer feedback |
+| `olist_products_dataset.csv` | Product categories for the drill-down |
+| `product_category_name_translation.csv` | Optional English category names for display |
 
-Products and category translation can add category mix. Customers and sellers can add location. Order payments can add checkout payment type and instalment count. Olist's instalment count describes a payment choice. Loan terms, repayment dates and delinquency require separate data.
+Use trailing 7-, 30- and 90-day summaries where there is enough activity. Start with order volume and category mix, delivery delays and late-delivery rates, and review counts and low-score rates. Include the counts behind rates and compare recent values with the seller's prior history. Use timestamps to establish when each feature became available. Keep cancellation snapshots out of historical features where the event date is unavailable.
 
-For real merchant-linked credit training, the minimum additional inputs are pseudonymous order, seller and loan IDs with a verified mapping, origination date and terms, instalment due dates and amounts, payment dates and amounts or dated days-past-due snapshots, and enough follow-up to observe the full 60-day outcome window.
+## Merchant score and product drill-down
 
-## Training and evaluation
+- **Merchant score.** Show the forecast, the largest model drivers, and recent rates with their order counts and historical baselines.
+- **Product drill-down.** Show which categories contribute the most to the seller's recently observed late deliveries, alongside their order counts and late-delivery rates. Show individual products when there is enough history. For orders spanning several categories, use a consistent assignment rule so counts reconcile to the merchant total.
+- **Review actions.** Start with Monitor, Investigate category, and Escalate for operations review. Choose score thresholds on validation data and show which categories merit review.
 
-1. Join orders to seller IDs and deduplicate at the seller–order level before aggregation. Keep features available by each scoring cutoff. Use observed delivery and review timestamps to build trailing volume, delays, feedback and changes against a seller's earlier history. For statuses without an event timestamp, leave them out of historical features unless their availability can be established.
-2. Profile monthly seller coverage, order counts, missingness and class balance. Require sufficient historical support and report which seller-months are eligible. Freeze target and cohort rules using the development period.
-3. Split chronologically into train, validation and test. Require each training or validation label to have fully matured before the next split starts. Compare a trailing late-rate rule, logistic regression and a tree-based model on the same splits. Report average precision, the positive-rate baseline, and precision and recall at a threshold picked on validation.
-4. Explain scores and use them to prioritise merchant review. Carry forward SHAP and Apriori for the lab demonstration once the baseline and held-out evaluation are in place.
+The product drill-down describes observed outcomes. Its scope is to localise a merchant alert, while the forecast is evaluated at seller-month level.
 
-Keep raw datasets and competition downloads local. Share source links, code and reproducible results through Git.
+## Lab evaluation
+
+1. Check join uniqueness, timestamp availability, missingness, seller coverage and positive counts by month. Confirm that the completed-delivery and historical-volume requirements leave usable validation and test periods.
+2. Split chronologically into train, validation and test. Require each development label to mature before the next split starts.
+3. Compare a rule based on the seller's trailing late-delivery rate with logistic regression and a tree-based model. Use average precision as the primary metric and show the positive-rate baseline. Report precision, recall and review volume at a threshold fixed on validation.
+4. Compare models with and without product-mix and feedback features to test whether they improve on historical fulfilment rates and order volume. Use SHAP for model explanations and Apriori to explore combinations of historical warning signs after the baseline is established.
+
+The TVS Credit case study motivates the merchant and product views. This lab version uses observed fulfilment outcomes from Olist and requires no synthetic repayments or Home Credit download. A future credit-risk extension would require linked merchant orders, loan IDs and repayment events.
+
+Keep source datasets local. Share source links, code and reproducible results through Git.
