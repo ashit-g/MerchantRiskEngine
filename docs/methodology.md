@@ -36,4 +36,4 @@ Validation score percentiles give illustrative review thresholds. Scores above t
 
 For each score, replace one feature at a time with its training median and report the largest changes. This gives a simple model sensitivity check. The product drill-down ranks categories or product IDs by their contribution to observed late deliveries in the past 30 days, with counts and rates for context.
 
-The initial implementation provides a CLI and evaluation outputs. SHAP, Apriori and a dashboard are follow-on work.
+The implementation provides a training and scoring CLI, evaluation outputs, and a Streamlit dashboard for the historical seller review workflow. SHAP and Apriori are follow-on work.

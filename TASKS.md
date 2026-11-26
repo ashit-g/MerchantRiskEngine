@@ -18,13 +18,13 @@ This plan divides the remaining lab work between two teammates. Use the role lab
 
 ## Teammate 2 — Product experience and explanation
 
-- [ ] **Build the dashboard.** Add a seller and historical month selector. Show the forecast, review tier, historical late rate and delivery counts, plus the product or category drill-down. Start with the existing scoring CLI outputs.
-- [ ] **Make the alert explainable.** Translate feature names into plain language, show the period behind each value, and identify which categories contributed to recent delays. Use the current feature comparisons first. Evaluate SHAP as a follow-on if time permits.
-- [ ] **Add a warning-pattern view if time permits.** Use Apriori on historical signals in the development period. Show support, confidence and lift if the rules have enough examples to be worth presenting.
+- [x] **Build the dashboard.** Added month, tier and seller filters, the forecast, historical delivery trends, and product or category drill-down.
+- [x] **Make the alert explainable.** Displayed plain-language feature comparisons and periods, plus the category contribution to recent delays.
+- [ ] **Evaluate SHAP and a warning-pattern view if time permits.** Use Apriori on historical signals in the development period. Show support, confidence and lift if the rules have enough examples to be worth presenting.
 - [ ] **Prepare and run the demo.** Document setup, expected outputs, and empty states for sellers with insufficient history. Rehearse the two examples and explain the difference between a forward seller score and a historical product drill-down.
 
 ## Handoffs and submission
 
-1. Teammate 2 can build the dashboard against the current outputs immediately. Coordinate any model-output schema changes before updating the dashboard.
+1. Teammate 2 can refine the dashboard against the current outputs. Coordinate any model-output schema changes before updating the dashboard.
 2. Teammate 1 shares backtest results, the chosen model and demo inputs. Teammate 2 verifies that the dashboard matches the same seller/date outputs from the CLI.
 3. Both teammates run the project from a clean checkout, review each other's changes, and agree on the results and limitations to present. Use separate Git branches for the evaluation and dashboard work.
