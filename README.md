@@ -45,9 +45,11 @@ python -m streamlit run dashboard.py --server.address 127.0.0.1
 
 Open [the local dashboard](http://localhost:8501). If you already have a model and score export from the same training run, you can reuse them.
 
-Choose a forecast month and review tier, then inspect a seller from the ranked queue. The **Delivery trend** and **Product breakdown** tabs cover deliveries observed by the scoring date. **Score drivers** shows how the forecast changes when individual inputs are replaced with their training medians.
+Start with **Lab overview** to explain the target, dataset split and matched-budget evaluation. Switch between 10% and 25% review budgets to show how the number of flagged cases changes. Then open **Seller explorer**, choose a forecast month and review tier, and inspect a seller from the ranked queue. The profile separates the forecast, delivery history before scoring and the outcome observed later. The **Delivery trend** and **Product breakdown** tabs cover deliveries observed by the scoring date. **Score drivers** shows how the forecast changes when individual inputs are replaced with their training medians.
 
 The review queue uses the held-out evaluation export. It includes sellers with both sufficient historical activity and a mature outcome label. Forecasts use the saved model and information available at the scoring date. The dashboard reports a warning if the model and queue need to be regenerated together.
+
+For a short lab demo, start at the 10% review budget, switch to 25%, then open the June 2018 seller queue. In the current Olist run, seller `de23c3b98a88` shows a 36.5% forecast and two late deliveries among six eligible deliveries. The highest-ranked June seller, `2c9e548be185`, illustrates a false alarm with zero late deliveries among eight.
 
 ## Project notes
 

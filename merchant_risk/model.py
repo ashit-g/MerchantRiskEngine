@@ -202,6 +202,9 @@ def score_seller(
     if seller_id not in features.index:
         raise ValueError(f"Seller {seller_id} has insufficient recent order history or is absent.")
 
+    missing_features = set(artifact["features"]) - set(features.columns)
+    if missing_features:
+        raise ValueError("The saved model requires newer features. Restart Streamlit with the latest code or retrain the model.")
     model = artifact["model"]
     row = features.loc[[seller_id], artifact["features"]]
     score = float(model.predict_proba(row)[0, 1])
