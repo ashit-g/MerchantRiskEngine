@@ -6,7 +6,7 @@ The project uses observed delivery outcomes from [Brazilian E-Commerce Public Da
 
 ## Run locally
 
-Use Python 3.11 or 3.12. Download and extract the Olist archive into `data/olist/`. See the [data guide](docs/data.md) for the required files.
+Use Python 3.10, 3.11 or 3.12. Download and extract the Olist archive into `data/olist/`. See the [data guide](docs/data.md) for the required files. The requirements select compatible NumPy and SciPy pins for Python 3.10.
 
 ```sh
 python3 -m venv .venv
@@ -49,7 +49,7 @@ Start with **Lab overview** to explain the target, dataset split and matched-bud
 
 The review queue uses the held-out evaluation export. It includes sellers with both sufficient historical activity and a mature outcome label. Forecasts use the saved model and information available at the scoring date. The dashboard reports a warning if the model and queue need to be regenerated together.
 
-For a short lab demo, start at the 10% review budget, switch to 25%, then open the June 2018 seller queue. In the current Olist run, seller `de23c3b98a88` shows a 36.5% forecast and two late deliveries among six eligible deliveries. The highest-ranked June seller, `2c9e548be185`, illustrates a false alarm with zero late deliveries among eight.
+For a short lab demo, start at the 10% review budget, switch to 25%, then open the June 2018 seller queue. In the current Olist run, seller `de23c3b98a88888289c6f5cc1209054a` shows a 36.3% forecast and two late deliveries among six eligible deliveries. The highest-ranked June seller, `2c9e548be18521d1c43cde1c582c6de8`, illustrates a false alarm with zero late deliveries among eight.
 
 ## Project notes
 

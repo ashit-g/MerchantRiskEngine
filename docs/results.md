@@ -2,6 +2,30 @@
 
 The first run uses observed late deliveries and one row per eligible seller-month. Reproduce it with `python -m merchant_risk train`. The generated `artifacts/metrics.json` has the full breakdown.
 
+## Coverage and label balance
+
+The table below was regenerated from the Olist archive used for this lab. **History** is the number of sellers with at least five purchases in the 90 days before the scoring date. **Mature label** is the number of seller-months with at least five eligible completed deliveries in the promised-delivery month, after its 30-day follow-up. **Evaluation** is their intersection; only these rows are scored and evaluated.
+
+| Promised month | History | Mature label | Evaluation | Positives | Positive rate |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| 2017-04 | 246 | 112 | 110 | 5 | 4.5% |
+| 2017-05 | 304 | 159 | 152 | 13 | 8.6% |
+| 2017-06 | 356 | 193 | 189 | 8 | 4.2% |
+| 2017-07 | 354 | 171 | 165 | 7 | 4.2% |
+| 2017-08 | 384 | 208 | 200 | 4 | 2.0% |
+| 2017-09 | 422 | 225 | 223 | 10 | 4.5% |
+| 2017-10 | 450 | 212 | 207 | 13 | 6.3% |
+| 2017-11 | 489 | 230 | 220 | 14 | 6.4% |
+| 2017-12 | 563 | 327 | 325 | 72 | 22.2% |
+| 2018-03 (validation) | 653 | 398 | 385 | 131 | 34.0% |
+| 2018-04 (validation) | 694 | 330 | 315 | 107 | 34.0% |
+| 2018-06 (test) | 749 | 226 | 222 | 30 | 13.5% |
+| 2018-07 (test) | 752 | 351 | 335 | 5 | 1.5% |
+
+The validation positive rate is **238 / 700 = 34.0%**, while the held-out rate is **35 / 557 = 6.3%**. This is a substantial prevalence shift, driven especially by the change from 30 June positives to five July positives. It is why raw alert rates cannot be compared across the periods without also reporting the review capacity and captured positives.
+
+The two eligibility rules answer different questions. A seller can have enough recent purchases to be scored but not five completed, usable deliveries due in the target month; such a seller has no label for this task. Conversely, a seller-month can have a mature delivery label but lack the required purchase history. The label further excludes cancellations, undelivered orders, missing actual delivery dates, and deliveries recorded after the 30-day follow-up. These exclusions keep the observed outcome definition consistent, but reduce coverage and mean the results apply to this completed-delivery cohort rather than every marketplace order.
+
 ## Validation comparison
 
 | Candidate | Average precision |
@@ -47,7 +71,7 @@ Five development folds cover December 2017 through April 2018. Each fold trains 
 | Trailing late-rate rule | 0.311 | 66 | 134 |
 | Original random forest | 0.382 | 73 | 156 |
 | Logistic regression with known orders | 0.434 | 81 | 171 |
-| Random forest with known orders | 0.448 | 82 | 170 |
+| Random forest with known orders | 0.449 | 82 | 170 |
 | Random forest with fulfilment context | 0.448 | 85 | 171 |
 
 ### Comparison on the original holdout
@@ -61,3 +85,32 @@ We retained the original training, validation and test months. The model with fu
 | Random forest with fulfilment context | 0.150 | 7 | 14 |
 
 The gain is concentrated in the smaller review queue. At its own validation-derived cutoff, the updated model captured 12 of 35 positives with 58 reviews. The short historical holdout and shifts in monthly prevalence limit what this establishes about future performance.
+
+## Frozen presentation run (2026-11-27)
+
+The presentation artifacts were regenerated together from source commit `466c599da9f92e0820e4e4f1db2b4a90992651a0` with Python 3.10.12. Run `python -m merchant_risk train` followed by `python -m merchant_risk backtest` from the same environment to reproduce them. The selected model is `random_forest/with_fulfilment_context`.
+
+| Split | Seller-months | Positives | Positive rate |
+| --- | ---: | ---: | ---: |
+| Train (2017-04 to 2017-12) | 1,791 | 146 | 8.2% |
+| Validation (2018-03 to 2018-04) | 700 | 238 | 34.0% |
+| Test (2018-06 to 2018-07) | 557 | 35 | 6.3% |
+
+On the held-out test, the selected model has average precision **0.150**, Brier score **0.061**, and at its validation-derived action cutoff reviews 10.4% of seller-months with 20.7% precision and 34.3% recall. The following is the fair, matched-capacity comparison used in the presentation.
+
+| Monthly budget | Ranking | Reviews | Positives captured | Precision | Recall |
+| --- | --- | ---: | ---: | ---: | ---: |
+| 10% | Fulfilment-context random forest | 57 | 7 | 12.3% | 20.0% |
+| 10% | Trailing late-rate rule | 57 | 2 | 3.5% | 5.7% |
+| 10% | Original random forest | 57 | 4 | 7.0% | 11.4% |
+| 25% | Fulfilment-context random forest | 140 | 14 | 10.0% | 40.0% |
+| 25% | Trailing late-rate rule | 140 | 10 | 7.1% | 28.6% |
+| 25% | Original random forest | 140 | 14 | 10.0% | 40.0% |
+
+The same run produced `artifacts/metrics.json`, `artifacts/backtest_metrics.json`, `artifacts/test_scores.csv`, and `artifacts/model.joblib`. Keep these files together when handing off to the dashboard: the queue and model are deliberately generated in one run.
+
+## What the comparisons say about the features
+
+The development folds show that timing and fulfilment context carry useful signal. The trailing 90-day late-rate rule reaches mean monthly average precision of 0.311; the original random forest, which combines recent order and delivery timing with product mix and reviews, reaches 0.382. Adding orders already known at the scoring date raises that figure to 0.448 for the random forest. The fuller fulfilment-context model ties that average precision but captures the most positives in the smaller matched review queue (85 in 161 reviews, versus 82 for known orders alone).
+
+The fixed validation split selected the fulfilment-context forest before the June--July holdout was compared. On that historical benchmark it improves average precision from 0.092 for the original forest to 0.150, and finds seven rather than four positives in the 57-slot queue. Product mix and review features remain part of the selected feature set, but these aggregate comparisons do not establish that any one category or review feature is independently causal. Any further feature selection must use development folds only; June--July remains a historical benchmark.
