@@ -1,30 +1,39 @@
-# MerchantRiskEngine task plan
+# MerchantRiskEngine lab task plan
 
-This plan divides the remaining lab work between two teammates. Use the role labels below until the team assigns names. The current target is a seller-month with at least 20% late deliveries among eligible Olist orders due the following month.
+**Member 1 owns the data, model and evaluation evidence. Member 2 owns the dashboard, presentation and live demo.** Both members verify the final run and rehearse their handoff.
 
-## Completed foundation
+The lab predicts whether at least 20% of a seller's eligible Olist deliveries will arrive late in the next expected-delivery month. The assessment uses observed delivery outcomes.
 
-- [x] Join Olist orders, items, reviews and products and build historical seller features.
-- [x] Train and compare logistic regression, random forest and a trailing late-rate rule.
-- [x] Score an individual seller and provide category and product drill-downs through the CLI.
-- [x] Compare the model and rule at equal monthly review budgets and document the June–July 2018 results.
+## Completed
 
-## Teammate 1 — Data and model evaluation
+- [x] **Member 1** — Joined the Olist files, built features using information available by each scoring date, and trained and compared the candidate models.
+- [x] **Member 1** — Ran five chronological development backtests and evaluated the updated random forest, original random forest and trailing late-rate rule at matched review budgets.
+- [x] **Member 2** — Built the Streamlit lab overview and seller explorer, including review-budget controls, seller history, product drill-down and score drivers.
+- [x] **Member 2** — Documented a confirmed alert and a false alarm for the June 2018 demo.
 
-- [ ] **Audit evaluation coverage and drift.** Use monthly counts to show how seller coverage, positive rates and order volumes change over time. Describe how many sellers are excluded by the historical volume and target follow-up rules. Deliver a short table in `docs/results.md`.
-- [x] **Run chronological backtests.** Compared model variants across five development months with matured labels and matched monthly review budgets. The results are in `docs/results.md`.
-- [ ] **Evaluate feature groups.** Quantify what product mix and review signals add beyond historical fulfilment and order volume. If they help only in some months, record those differences.
-- [ ] **Provide model outputs for the demo.** Share a runnable model and documented output schema, plus two historical seller IDs and scoring dates for the demo. Include at least one alert with a clear category drill-down and one low-risk example. Keep raw data and model artifacts local.
+## Member 1 — Data and model evaluation
 
-## Teammate 2 — Product experience and explanation
+- [ ] **Audit coverage and class balance**. `docs/results.md` explains the monthly counts of sellers with enough history, sellers with a mature label, and their overlap. Quantify the change in positive rates from validation to test and explain the delivery and follow-up exclusions.
+- [ ] **Summarise which features helped**. Document what the existing comparisons show about order timing, fulfilment context, product mix and reviews. Use development folds for any additional feature selection. Keep the June–July 2018 results as the existing historical benchmark.
+- [ ] **Freeze the presentation results**. Run `python -m merchant_risk train` and `python -m merchant_risk backtest`. Record the commit, selected model, split sizes and exact 10% and 25% results. Share `metrics.json`, `test_scores.csv` and `model.joblib` from the same run locally, or give Member 2 the commands to regenerate them.
+- [ ] **Prepare the technical explanation**. Be ready to explain the seller-month label, how historical features avoid future delivery information, chronological splits and why matched review budgets matter. Cover the short test period and the assumption that Olist's estimated delivery date was available when the order was placed.
 
-- [x] **Build the dashboard.** Added month, tier and seller filters, the forecast, historical delivery trends, and product or category drill-down.
-- [x] **Make the alert explainable.** Displayed plain-language feature comparisons and periods, plus the category contribution to recent delays.
-- [ ] **Evaluate SHAP and a warning-pattern view if time permits.** Use Apriori on historical signals in the development period. Show support, confidence and lift if the rules have enough examples to be worth presenting.
-- [ ] **Prepare and run the demo.** Document setup, expected outputs, and empty states for sellers with insufficient history. Rehearse the two examples and explain the difference between a forward seller score and a historical product drill-down.
+## Member 2 — Dashboard and presentation
 
-## Handoffs and submission
+- [ ] **Check the dashboard against the final run**. Install and launch from the [README](README.md#run-the-streamlit-dashboard). Verify both budget selections against Member 1's metrics and match at least one dashboard seller score and review tier to the CLI output for the same date.
+- [ ] **Rehearse the two seller examples**. In June 2018, use `de23c3b98a88` for a confirmed alert and `2c9e548be185` for a false alarm from the current run. Verify both against the final export. Explain the forecast, the seller's history at scoring time, and the outcome observed later.
+- [ ] **Prepare the lab presentation**. Arrange the story around the problem, data, model, results, live seller demo and limitations. Have Member 1 review the numbers and wording. Save screenshots of the lab overview and both seller examples as a fallback for the live demo.
+- [ ] **Check the classroom setup**. Start the dashboard on the presentation machine. Check text and chart legibility at the planned display size, try the filters and tabs, and confirm that the missing-artifact message gives a usable recovery step.
 
-1. Teammate 2 can refine the dashboard against the current outputs. Coordinate any model-output schema changes before updating the dashboard.
-2. Teammate 1 shares backtest results, the chosen model and demo inputs. Teammate 2 verifies that the dashboard matches the same seller/date outputs from the CLI.
-3. Both teammates run the project from a clean checkout, review each other's changes, and agree on the results and limitations to present. Use separate Git branches for the evaluation and dashboard work.
+## Handoff and joint sign-off
+
+1. **Member 1 → Member 2** — Share the evaluation commit, run commands, exact results and the model and queue from a single run.
+2. **Member 2 → Member 1** — Share the presentation outline and checked demo sequence. Flag any differences between the dashboard, CLI and reported numbers.
+3. **Both** — Verify the project from a clean checkout, run the tests and rehearse once. Member 1 presents the data, model and evaluation. Member 2 presents the dashboard, seller examples and review workflow.
+
+Use separate branches for concurrent work. Commit source code and Markdown to GitHub. Keep raw Olist files and generated artifacts local.
+
+## Optional after the demo is ready
+
+- **Member 1** can evaluate SHAP explanations or mine Apriori warning patterns on the development data. Document support, confidence and lift for any rules presented.
+- **Member 2** can add a dashboard view for an explanation or warning pattern after Member 1 verifies it. Keep the existing score drivers and seller walkthrough as the demo baseline.
