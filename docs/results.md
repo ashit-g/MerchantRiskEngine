@@ -88,7 +88,7 @@ The gain is concentrated in the smaller review queue. At its own validation-deri
 
 ## Frozen presentation run (2026-11-27)
 
-The presentation artifacts were regenerated together from source commit `466c599da9f92e0820e4e4f1db2b4a90992651a0` with Python 3.10.12. Run `python -m merchant_risk train` followed by `python -m merchant_risk backtest` from the same environment to reproduce them. The selected model is `random_forest/with_fulfilment_context`.
+The presentation artifacts were regenerated together from source commit `8d7a17f86d367aa6c57f8030fd72099566b33bb2` with Python 3.10.12. Run `python -m merchant_risk train` followed by `python -m merchant_risk backtest` from the same environment to reproduce them. The selected model is `random_forest/with_fulfilment_context`.
 
 | Split | Seller-months | Positives | Positive rate |
 | --- | ---: | ---: | ---: |
