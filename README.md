@@ -30,4 +30,5 @@ The score includes the forecast, an example operations review tier, up to three 
 - [Data and target](docs/data.md) covers source files, the outcome rule and known exclusions.
 - [Modelling and evaluation](docs/methodology.md) explains the split, baseline, features and review thresholds.
 - [Initial results](docs/results.md) records the first validation and held-out evaluation.
+- [Two-person task plan](TASKS.md) assigns the remaining evaluation and dashboard work.
 - Code lives in `merchant_risk/`. Raw data and locally generated artifacts are ignored by Git.

@@ -15,6 +15,7 @@ from .features import (
     BASE_FEATURES, EXTRA_FEATURES, TARGET, maturity_date, month_end, monthly_outcomes,
     product_drilldown, seller_features,
 )
+from .review_budget import compare_review_budgets
 
 
 # Periods are target (promised-delivery) months. The gaps allow labels to mature.
@@ -127,7 +128,11 @@ def train_and_evaluate(orders: pd.DataFrame, reviews: pd.DataFrame, output_dir: 
     test_rule = test[RULE_FEATURE].fillna(rule_median).fillna(0)
     model_metrics = metrics(test[TARGET], test_scores, best_thresholds[0])
     model_metrics["brier_score"] = float(brier_score_loss(test[TARGET], test_scores))
+    budget_scores = test[["seller_id", "target_month", TARGET]].assign(
+        selected_model=test_scores, trailing_late_rate=test_rule,
+    )
     report = {
+        "matched_review_budgets": compare_review_budgets(budget_scores),
         "selected_model": best_name,
         "thresholds": {"investigate": best_thresholds[0], "escalate": best_thresholds[1]},
         "splits": {
@@ -150,6 +155,7 @@ def train_and_evaluate(orders: pd.DataFrame, reviews: pd.DataFrame, output_dir: 
     (output_dir / "metrics.json").write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")
     test[["seller_id", "score_date", "target_month", TARGET, "target_deliveries", "target_late_deliveries"]].assign(
         risk_score=test_scores,
+        baseline_score=test_rule,
         review_action=[review_action(score, best_thresholds) for score in test_scores],
     ).to_csv(output_dir / "test_scores.csv", index=False)
     joblib.dump({

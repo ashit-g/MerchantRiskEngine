@@ -24,6 +24,12 @@ Compare logistic regression and a random forest with and without product-mix and
 
 The gaps let outcome labels finish maturing before the next split's scoring dates. The report records coverage by month, including historically eligible sellers, seller-months with labels, their intersection, and positives. It includes average precision, precision, recall and the review rate. Brier score is reported for the learned probabilities.
 
+## Matched review budgets
+
+For the held-out comparison, rank the same evaluable sellers separately for each target month using the selected model and the trailing late-rate rule. Allocate 10% and 25% of that month's seller-months as review slots, rounded up to whole sellers. Break score ties by seller ID in ascending order without using outcomes. Report the number reviewed, positives captured, precision and recall by month and from pooled counts.
+
+This retrospective comparison is limited to historically eligible sellers with mature outcome labels. It compares rankings at a common review capacity. The CLI action tiers use validation thresholds for individual scores, so their review volume can vary. See `matched_review_budgets` in `artifacts/metrics.json` and `baseline_score` in `artifacts/test_scores.csv`.
+
 ## Decision output
 
 Validation score percentiles give illustrative review thresholds. Scores above the 75th percentile trigger **Investigate category**, and scores above the 90th percentile trigger **Escalate for operations review**. Remaining scores map to **Monitor**. Review volumes may differ on later data and when scores tie.

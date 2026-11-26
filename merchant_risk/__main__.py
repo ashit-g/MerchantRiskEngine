@@ -28,6 +28,9 @@ def main() -> None:
         if args.command == "train":
             report = train_and_evaluate(*read_olist(args.data_dir), args.output_dir)
             summary = {key: report[key] for key in ("selected_model", "splits", "held_out_test")}
+            summary["matched_review_budgets"] = {
+                budget: results["pooled"] for budget, results in report["matched_review_budgets"].items()
+            }
             print(json.dumps(summary, indent=2))
         else:
             date = pd.Timestamp(args.as_of).normalize()
