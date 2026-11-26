@@ -21,8 +21,8 @@ def queue_metrics(reviewed: int, captured: int, rows: int, positives: int) -> di
     }
 
 
-def compare_review_budgets(scores: pd.DataFrame) -> dict:
-    """Allocate the same number of review slots to both rankings each month."""
+def compare_review_budgets(scores: pd.DataFrame, rankings: tuple[str, ...] = RANKINGS) -> dict:
+    """Allocate the same number of review slots to each ranking each month."""
     report = {}
     for percent in REVIEW_BUDGET_PERCENTS:
         by_month = {}
@@ -31,7 +31,7 @@ def compare_review_budgets(scores: pd.DataFrame) -> dict:
             positives = int(frame[TARGET].sum())
             slots = ceil(rows * percent / 100)
             by_month[month] = {"seller_months": rows, "positives": positives}
-            for ranking in RANKINGS:
+            for ranking in rankings:
                 # A stable, outcome-independent tie-break keeps slot counts exact.
                 ranked = frame.sort_values([ranking, "seller_id"], ascending=[False, True])
                 captured = int(ranked.head(slots)[TARGET].sum())
@@ -40,7 +40,7 @@ def compare_review_budgets(scores: pd.DataFrame) -> dict:
         rows = len(scores)
         positives = int(scores[TARGET].sum())
         pooled = {"seller_months": rows, "positives": positives}
-        for ranking in RANKINGS:
+        for ranking in rankings:
             reviewed = sum(month[ranking]["reviewed"] for month in by_month.values())
             captured = sum(month[ranking]["positives_captured"] for month in by_month.values())
             pooled[ranking] = queue_metrics(reviewed, captured, rows, positives)

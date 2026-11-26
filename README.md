@@ -25,6 +25,14 @@ python -m merchant_risk score --seller-id SELLER_ID --as-of YYYY-MM-DD
 
 The score includes the forecast, an example operations review tier, up to three feature comparisons and a 30-day drill-down. For input and output options, use `python -m merchant_risk --help`.
 
+## Run expanding window backtests
+
+```sh
+python -m merchant_risk backtest
+```
+
+This compares model variants across five development months and writes `artifacts/backtest_metrics.json`.
+
 ## Run the Streamlit dashboard
 
 From the repository root with the virtual environment active:

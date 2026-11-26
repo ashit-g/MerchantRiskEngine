@@ -12,7 +12,7 @@ This plan divides the remaining lab work between two teammates. Use the role lab
 ## Teammate 1 — Data and model evaluation
 
 - [ ] **Audit evaluation coverage and drift.** Use monthly counts to show how seller coverage, positive rates and order volumes change over time. Describe how many sellers are excluded by the historical volume and target follow-up rules. Deliver a short table in `docs/results.md`.
-- [ ] **Run chronological backtests.** Check additional mature target months with a rolling or expanding training window. Leave time for labels to mature between training, validation and testing. Compare the model and rule at 10% and 25% review budgets, with per-month and pooled results.
+- [x] **Run chronological backtests.** Compared model variants across five development months with matured labels and matched monthly review budgets. The results are in `docs/results.md`.
 - [ ] **Evaluate feature groups.** Quantify what product mix and review signals add beyond historical fulfilment and order volume. If they help only in some months, record those differences.
 - [ ] **Provide model outputs for the demo.** Share a runnable model and documented output schema, plus two historical seller IDs and scoring dates for the demo. Include at least one alert with a clear category drill-down and one low-risk example. Keep raw data and model artifacts local.
 

@@ -36,6 +36,22 @@ class HistoricalCutoffTest(unittest.TestCase):
         self.assertEqual(features["reviews_30d"], 1)
         self.assertEqual(features["low_review_rate_30d"], 0)
 
+    def test_known_next_month_orders_use_only_information_available_at_cutoff(self):
+        orders = self.orders.copy()
+        orders.loc[4:5, "promised"] = pd.Timestamp("2018-06-05")
+        orders["delay_days"] = (orders["delivered"] - orders["promised"]).dt.days
+        orders["late"] = orders["delay_days"].gt(0)
+        features = seller_features(orders, self.reviews, self.cutoff).iloc[0]
+        self.assertEqual(features["known_next_month_orders"], 2)
+        self.assertEqual(features["known_next_month_delivered_share"], 0.5)
+        self.assertEqual(features["known_next_month_days_to_promise"], 5)
+        self.assertEqual(features["known_next_month_open_days"], 11)
+
+        orders.loc[5, "delivered"] = pd.NaT
+        orders["delay_days"] = (orders["delivered"] - orders["promised"]).dt.days
+        orders["late"] = orders["delay_days"].gt(0)
+        pd.testing.assert_series_equal(features, seller_features(orders, self.reviews, self.cutoff).iloc[0])
+
     def test_drilldown_reconciles_to_seller_totals(self):
         drilldown = product_drilldown(self.orders, "seller", self.cutoff)
         self.assertEqual(drilldown["category"].tolist(), ["b", "a"])

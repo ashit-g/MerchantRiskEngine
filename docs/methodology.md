@@ -9,10 +9,11 @@ The TVS Credit case study informs the product flow. The lab implementation uses 
 | Order activity | Trailing 7-, 30- and 90-day counts, order value and freight, and recent volume versus prior history |
 | Fulfilment | Trailing delivery counts and late rates, recent mean delivery delay, and the 30-day late rate versus the preceding 90 days |
 | Product mix and feedback | Category count and concentration, review volume, low-review rates, and change relative to prior history |
+| Fulfilment context | Marketplace late rates, smoothed seller rates, overdue orders, estimated lead times, and counts and delivery status of already-placed orders due next month |
 
 Each feature uses the date of the event it describes. A late delivery enters the history when it is delivered. A review enters on its answer date. A missing rate remains missing until a training-fitted imputer handles it. Counts give context for rates from small samples. Seller and product IDs are used for grouping and reporting.
 
-Compare logistic regression and a random forest with and without product-mix and feedback features. Use the trailing 90-day late rate as the simple ranking baseline. Fit and preprocess on training data, then select the learned configuration with the highest validation average precision. Compare the selected configuration with the rule on the held-out data. The positive rate gives context for average precision under class imbalance.
+Compare logistic regression and a random forest with and without product-mix and feedback features. The additional random forest candidate includes fulfilment context. Use the trailing 90-day late rate as the simple ranking baseline. Fit and preprocess on training data, then select the learned configuration with the highest validation average precision. Compare the selected configuration with the rule on the held-out data. The positive rate gives context for average precision under class imbalance.
 
 ## Evaluation windows
 
@@ -24,9 +25,13 @@ Compare logistic regression and a random forest with and without product-mix and
 
 The gaps let outcome labels finish maturing before the next split's scoring dates. The report records coverage by month, including historically eligible sellers, seller-months with labels, their intersection, and positives. It includes average precision, precision, recall and the review rate. Brier score is reported for the learned probabilities.
 
+The expanding-window backtest evaluates model variants from December 2017 through April 2018. For each fold, use only training labels that matured before the fold's scoring date. The headline test comparison uses the fixed chronological splits above.
+
+The known-order features assume Olist's estimated delivery date was available when the order was placed. The files provide the estimate without a revision history. Only purchases recorded by the scoring date are included, and a delivery after the scoring date is treated as unobserved at scoring time.
+
 ## Matched review budgets
 
-For the held-out comparison, rank the same evaluable sellers separately for each target month using the selected model and the trailing late-rate rule. Allocate 10% and 25% of that month's seller-months as review slots, rounded up to whole sellers. Break score ties by seller ID in ascending order without using outcomes. Report the number reviewed, positives captured, precision and recall by month and from pooled counts.
+For the held-out comparison, rank the same evaluable sellers separately for each target month using the selected model, original random forest and the trailing late-rate rule. Allocate 10% and 25% of that month's seller-months as review slots, rounded up to whole sellers. Break score ties by seller ID in ascending order without using outcomes. Report the number reviewed, positives captured, precision and recall by month and from pooled counts.
 
 This retrospective comparison is limited to historically eligible sellers with mature outcome labels. It compares rankings at a common review capacity. The CLI action tiers use validation thresholds for individual scores, so their review volume can vary. See `matched_review_budgets` in `artifacts/metrics.json` and `baseline_score` in `artifacts/test_scores.csv`.
 

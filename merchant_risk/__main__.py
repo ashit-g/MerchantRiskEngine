@@ -4,6 +4,7 @@ from pathlib import Path
 
 import pandas as pd
 
+from .backtest import run_backtest
 from .data import read_olist
 from .model import score_seller, train_and_evaluate
 
@@ -15,6 +16,10 @@ def main() -> None:
     train = commands.add_parser("train", help="Train candidates and evaluate the selected model.")
     train.add_argument("--data-dir", type=Path, default=Path("data/olist"))
     train.add_argument("--output-dir", type=Path, default=Path("artifacts"))
+
+    backtest = commands.add_parser("backtest", help="Compare model variants across expanding time windows.")
+    backtest.add_argument("--data-dir", type=Path, default=Path("data/olist"))
+    backtest.add_argument("--output-dir", type=Path, default=Path("artifacts"))
 
     score = commands.add_parser("score", help="Score a seller at a historical month-end.")
     score.add_argument("--data-dir", type=Path, default=Path("data/olist"))
@@ -32,6 +37,9 @@ def main() -> None:
                 budget: results["pooled"] for budget, results in report["matched_review_budgets"].items()
             }
             print(json.dumps(summary, indent=2))
+        elif args.command == "backtest":
+            report = run_backtest(*read_olist(args.data_dir), args.output_dir)
+            print(json.dumps(report["mean_monthly_average_precision"], indent=2))
         else:
             date = pd.Timestamp(args.as_of).normalize()
             if not date.is_month_end or date.tz is not None:

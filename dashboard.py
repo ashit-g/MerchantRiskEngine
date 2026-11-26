@@ -32,6 +32,18 @@ FEATURE_LABELS = {
     "top_category_share_30d": "Order share of leading category · last 30 days",
     "previous_low_review_rate_90d": "Low-review rate · prior 90-day baseline",
     "low_review_rate_change": "Change in low-review rate · last 30 days vs baseline",
+    "late_rate_30d_smoothed": "Smoothed late-delivery rate · last 30 days",
+    "late_rate_90d_smoothed": "Smoothed late-delivery rate · last 90 days",
+    "market_late_rate_30d": "Marketplace late-delivery rate · last 30 days",
+    "recent_due_orders_undelivered_share": "Share without a recorded delivery · recently due orders",
+    "overdue_open_orders_90d": "Orders past promise date without a recorded delivery",
+    "mean_promised_lead_days_30d": "Average promised delivery lead time · last 30 days",
+    "late_rate_recent_vs_market": "Seller late-delivery rate versus marketplace · last 30 days",
+    "known_next_month_orders": "Orders already placed and due next month",
+    "known_next_month_delivered_share": "Share of orders due next month already delivered",
+    "known_next_month_days_to_promise": "Average days to promised delivery · known next-month orders",
+    "known_next_month_open_days": "Average age of undelivered orders due next month",
+
 }
 for period in (7, 30, 90):
     for prefix, label in (
@@ -69,13 +81,16 @@ def category_label(value: str) -> str:
 
 
 def feature_value(feature: str, value: float) -> str:
-    if feature in {"late_rate_change", "low_review_rate_change"}:
+    if feature in {"late_rate_change", "low_review_rate_change", "late_rate_recent_vs_market"}:
         return f"{value * 100:+.1f} pp"
     if "rate" in feature or "share" in feature:
         return f"{value:.1%}"
     if feature in {"mean_order_value_30d", "mean_freight_30d"}:
         return f"R$ {value:,.2f}"
-    if feature == "mean_delay_30d":
+    if feature in {
+        "mean_delay_30d", "mean_promised_lead_days_30d", "known_next_month_days_to_promise",
+        "known_next_month_open_days",
+    }:
         return f"{value:.1f} days"
     return f"{value:,.1f}".removesuffix(".0")
 

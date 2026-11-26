@@ -20,6 +20,17 @@ EXTRA_FEATURES = [
 ]
 
 
+FULFILMENT_CONTEXT_FEATURES = [
+    "late_rate_30d_smoothed", "late_rate_90d_smoothed", "market_late_rate_30d",
+    "recent_due_orders_undelivered_share", "overdue_open_orders_90d",
+    "mean_promised_lead_days_30d", "late_rate_recent_vs_market",
+]
+KNOWN_NEXT_MONTH_FEATURES = [
+    "known_next_month_orders", "known_next_month_delivered_share",
+    "known_next_month_days_to_promise", "known_next_month_open_days",
+]
+
+
 def month_end(month: pd.Period) -> pd.Timestamp:
     return month.end_time.normalize()
 
@@ -75,6 +86,46 @@ def seller_features(orders: pd.DataFrame, reviews: pd.DataFrame, cutoff: pd.Time
     features["order_volume_change"] = (
         features["orders_30d"] - prior_orders.groupby("seller_id").size().reindex(sellers, fill_value=0) / 3
     )
+    recent_deliveries = previous_window(deliveries, "delivered", cutoff, 30)
+    market_late_rate = recent_deliveries["late"].mean()
+    features["market_late_rate_30d"] = market_late_rate
+    for days in (30, 90):
+        window = previous_window(deliveries, "delivered", cutoff, days)
+        late_counts = window.groupby("seller_id")["late"].sum().reindex(sellers, fill_value=0)
+        # Stabilise rates of sellers with only a few completed deliveries.
+        features[f"late_rate_{days}d_smoothed"] = (
+            (late_counts + 10 * market_late_rate) / (features[f"deliveries_{days}d"] + 10)
+        )
+    features["late_rate_recent_vs_market"] = features["late_rate_30d_smoothed"] - market_late_rate
+
+    due = recent_orders[recent_orders["promised"].lt(cutoff)]
+    awaiting_delivery = due[due["delivered"].isna() | due["delivered"].gt(cutoff)]
+    features["overdue_open_orders_90d"] = (
+        awaiting_delivery.groupby("seller_id").size().reindex(sellers, fill_value=0)
+    )
+    due_last_week = due[due["promised"].ge(cutoff - pd.Timedelta(days=7))]
+    awaiting_last_week = awaiting_delivery[awaiting_delivery["promised"].ge(cutoff - pd.Timedelta(days=7))]
+    features["recent_due_orders_undelivered_share"] = (
+        awaiting_last_week.groupby("seller_id").size().reindex(sellers, fill_value=0)
+        / due_last_week.groupby("seller_id").size().reindex(sellers)
+    )
+    orders_30d = previous_window(recent_orders, "purchased", cutoff, 30)
+    lead_time = (orders_30d["promised"] - orders_30d["purchased"]).dt.days
+    features["mean_promised_lead_days_30d"] = lead_time.where(lead_time.ge(0)).groupby(
+        orders_30d["seller_id"]
+    ).mean()
+
+    target_month = cutoff.to_period("M") + 1
+    known_orders = recent_orders[recent_orders["promised"].between(target_month.start_time, month_end(target_month))]
+    known_counts = known_orders.groupby("seller_id").size()
+    known_delivered = known_orders["delivered"].le(cutoff)
+    known_completed = known_delivered.groupby(known_orders["seller_id"]).sum()
+    features["known_next_month_orders"] = known_counts.reindex(sellers, fill_value=0)
+    features["known_next_month_delivered_share"] = known_completed / known_counts
+    days_to_promise = (known_orders["promised"] - cutoff).dt.days
+    features["known_next_month_days_to_promise"] = days_to_promise.groupby(known_orders["seller_id"]).mean()
+    open_age = (cutoff - known_orders["purchased"]).dt.days
+    features["known_next_month_open_days"] = open_age.where(~known_delivered).groupby(known_orders["seller_id"]).mean()
     features["score_date"] = cutoff
     return features.reset_index()
 

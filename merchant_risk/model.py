@@ -12,7 +12,8 @@ from sklearn.pipeline import make_pipeline
 from sklearn.preprocessing import StandardScaler
 
 from .features import (
-    BASE_FEATURES, EXTRA_FEATURES, TARGET, maturity_date, month_end, monthly_outcomes,
+    BASE_FEATURES, EXTRA_FEATURES, FULFILMENT_CONTEXT_FEATURES, KNOWN_NEXT_MONTH_FEATURES,
+    TARGET, maturity_date, month_end, monthly_outcomes,
     product_drilldown, seller_features,
 )
 from .review_budget import compare_review_budgets
@@ -25,6 +26,27 @@ SPLITS = {
     "test": ("2018-06", "2018-07"),
 }
 RULE_FEATURE = "late_rate_90d"
+HISTORICAL_FEATURES = BASE_FEATURES + EXTRA_FEATURES
+CONTEXT_FEATURES = HISTORICAL_FEATURES + FULFILMENT_CONTEXT_FEATURES + KNOWN_NEXT_MONTH_FEATURES
+PREVIOUS_MODEL = "random_forest/with_product_mix_and_reviews"
+
+
+def build_month(
+    orders: pd.DataFrame, reviews: pd.DataFrame, month: pd.Period, observed_through: pd.Timestamp,
+) -> tuple[pd.DataFrame, dict]:
+    features = seller_features(orders, reviews, month_end(month - 1))
+    outcomes = monthly_outcomes(orders, month, observed_through)
+    eligible = outcomes[outcomes[TARGET].notna()]
+    joined = features.merge(eligible, on="seller_id", how="inner", validate="one_to_one")
+    joined["target_month"] = str(month)
+    joined[TARGET] = joined[TARGET].astype(int)
+    coverage = {
+        "historically_eligible_sellers": len(features),
+        "seller_months_with_label": len(eligible),
+        "seller_months_in_evaluation": len(joined),
+        "positives_in_evaluation": int(joined[TARGET].sum()),
+    }
+    return joined, coverage
 
 
 def build_splits(orders: pd.DataFrame, reviews: pd.DataFrame) -> tuple[dict, dict]:
@@ -38,20 +60,9 @@ def build_splits(orders: pd.DataFrame, reviews: pd.DataFrame) -> tuple[dict, dic
             raise ValueError(f"Labels from the preceding split have not matured before {name} scoring.")
         rows = []
         for month in months:
-            features = seller_features(orders, reviews, month_end(month - 1))
-            outcomes = monthly_outcomes(orders, month, observed_through)
-            eligible = outcomes[outcomes[TARGET].notna()]
-            joined = features.merge(eligible, on="seller_id", how="inner", validate="one_to_one")
-            joined["target_month"] = str(month)
+            joined, coverage[str(month)] = build_month(orders, reviews, month, observed_through)
             rows.append(joined)
-            coverage[str(month)] = {
-                "historically_eligible_sellers": len(features),
-                "seller_months_with_label": len(eligible),
-                "seller_months_in_evaluation": len(joined),
-                "positives_in_evaluation": int(joined[TARGET].sum()),
-            }
         frame = pd.concat(rows, ignore_index=True)
-        frame[TARGET] = frame[TARGET].astype(int)
         if frame[TARGET].nunique() != 2:
             raise ValueError(f"The {name} split needs both outcome classes.")
         splits[name] = frame
@@ -107,32 +118,40 @@ def train_and_evaluate(orders: pd.DataFrame, reviews: pd.DataFrame, output_dir: 
     validation_metrics = {
         "trailing_late_rate": metrics(validation_labels, rule_validation, rule_threshold),
     }
-    best_ap = -1.0
-    for name, estimator in candidate_models().items():
+    models = candidate_models()
+    candidates = [
+        (f"{name}/{feature_set}", estimator, columns)
+        for name, estimator in models.items()
         for feature_set, columns in (
-            ("fulfilment", BASE_FEATURES), ("with_product_mix_and_reviews", BASE_FEATURES + EXTRA_FEATURES),
-        ):
-            model = clone(estimator).fit(train[columns], train[TARGET])
-            validation_scores = model.predict_proba(validation[columns])[:, 1]
-            thresholds = review_thresholds(validation_scores)
-            result = metrics(validation_labels, validation_scores, thresholds[0])
-            result["brier_score"] = float(brier_score_loss(validation_labels, validation_scores))
-            key = f"{name}/{feature_set}"
-            validation_metrics[key] = result
-            if result["average_precision"] > best_ap:
-                best_ap = result["average_precision"]
-                best_name, best_columns, best_thresholds = key, columns, thresholds
-                best_model = model
+            ("fulfilment", BASE_FEATURES), ("with_product_mix_and_reviews", HISTORICAL_FEATURES),
+        )
+    ]
+    candidates.append(("random_forest/with_fulfilment_context", models["random_forest"], CONTEXT_FEATURES))
+    fitted = {}
+    for key, estimator, columns in candidates:
+        model = clone(estimator).fit(train[columns], train[TARGET])
+        validation_scores = model.predict_proba(validation[columns])[:, 1]
+        thresholds = review_thresholds(validation_scores)
+        result = metrics(validation_labels, validation_scores, thresholds[0])
+        result["brier_score"] = float(brier_score_loss(validation_labels, validation_scores))
+        validation_metrics[key] = result
+        fitted[key] = (model, columns, thresholds)
 
+    best_name = max(fitted, key=lambda name: validation_metrics[name]["average_precision"])
+    best_model, best_columns, best_thresholds = fitted[best_name]
+    previous_model, previous_columns, previous_thresholds = fitted[PREVIOUS_MODEL]
+    previous_scores = previous_model.predict_proba(test[previous_columns])[:, 1]
     test_scores = best_model.predict_proba(test[best_columns])[:, 1]
     test_rule = test[RULE_FEATURE].fillna(rule_median).fillna(0)
     model_metrics = metrics(test[TARGET], test_scores, best_thresholds[0])
     model_metrics["brier_score"] = float(brier_score_loss(test[TARGET], test_scores))
     budget_scores = test[["seller_id", "target_month", TARGET]].assign(
-        selected_model=test_scores, trailing_late_rate=test_rule,
+        selected_model=test_scores, trailing_late_rate=test_rule, previous_random_forest=previous_scores,
     )
     report = {
-        "matched_review_budgets": compare_review_budgets(budget_scores),
+        "matched_review_budgets": compare_review_budgets(
+            budget_scores, ("selected_model", "trailing_late_rate", "previous_random_forest"),
+        ),
         "selected_model": best_name,
         "thresholds": {"investigate": best_thresholds[0], "escalate": best_thresholds[1]},
         "splits": {
@@ -149,6 +168,7 @@ def train_and_evaluate(orders: pd.DataFrame, reviews: pd.DataFrame, output_dir: 
         "held_out_test": {
             "selected_model": model_metrics,
             "trailing_late_rate": metrics(test[TARGET], test_rule, rule_threshold),
+            "previous_random_forest": metrics(test[TARGET], previous_scores, previous_thresholds[0]),
         },
     }
     output_dir.mkdir(parents=True, exist_ok=True)
