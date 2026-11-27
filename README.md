@@ -49,7 +49,15 @@ Start with **Lab overview** to explain the target, dataset split and matched-bud
 
 The review queue uses the held-out evaluation export. It includes sellers with both sufficient historical activity and a mature outcome label. Forecasts use the saved model and information available at the scoring date. The dashboard reports a warning if the model and queue need to be regenerated together.
 
-For a short lab demo, start at the 10% review budget, switch to 25%, then open the June 2018 seller queue. In the current Olist run, seller `de23c3b98a88888289c6f5cc1209054a` shows a 36.3% forecast and two late deliveries among six eligible deliveries. The highest-ranked June seller, `2c9e548be18521d1c43cde1c582c6de8`, illustrates a false alarm with zero late deliveries among eight.
+For a short lab demo, start at the 10% review budget, switch to 25%, then open the June 2018 seller queue. In the verified local Olist run, seller `de23c3b98a88888289c6f5cc1209054a` shows a 36.5% forecast and two late deliveries among six eligible deliveries. The highest-ranked June seller, `2c9e548be18521d1c43cde1c582c6de8`, illustrates a false alarm with zero late deliveries among eight.
+
+Verify the dashboard, both review budgets, seller forecasts against the CLI, filters and missing-input recovery using the saved run.
+
+```sh
+python -m scripts.verify_dashboard
+```
+
+The [demo guide](docs/demo-guide.md) contains the checked walkthrough and setup recovery commands. The [presentation outline and speaker notes](docs/presentation.md) cover both members' sections. See the [Member 2 verification record](docs/member2-validation.md) for the results and remaining joint sign-off.
 
 ## Project notes
 

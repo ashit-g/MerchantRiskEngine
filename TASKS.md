@@ -20,18 +20,20 @@ The lab predicts whether at least 20% of a seller's eligible Olist deliveries wi
 
 ## Member 2 — Dashboard and presentation
 
-- [ ] **Check the dashboard against the final run**. Install and launch from the [README](README.md#run-the-streamlit-dashboard). Verify both budget selections against Member 1's metrics and match at least one dashboard seller score and review tier to the CLI output for the same date.
-- [ ] **Rehearse the two seller examples**. In June 2018, use `de23c3b98a88888289c6f5cc1209054a` for a confirmed alert and `2c9e548be18521d1c43cde1c582c6de8` for a false alarm from the current run. Verify both against the final export. Explain the forecast, the seller's history at scoring time, and the outcome observed later.
-- [ ] **Prepare the lab presentation**. Arrange the story around the problem, data, model, results, live seller demo and limitations. Have Member 1 review the numbers and wording. Save screenshots of the lab overview and both seller examples as a fallback for the live demo.
-- [ ] **Check the classroom setup**. Start the dashboard on the presentation machine. Check text and chart legibility at the planned display size, try the filters and tabs, and confirm that the missing-artifact message gives a usable recovery step.
+- [x] **Check the dashboard against the final run**. Verified the README installation and local launch, both budget selections, and both demo sellers' score and action against the CLI. The [dashboard verifier](scripts/verify_dashboard.py) reproduces these checks using `python -m scripts.verify_dashboard`. See the [verification record](docs/member2-validation.md).
+- [x] **Prepare and verify the two seller walkthroughs**. Checked the June confirmed alert `de23c3b98a88888289c6f5cc1209054a` and false alarm `2c9e548be18521d1c43cde1c582c6de8` against the saved queue, CLI and live dashboard. The [demo guide](docs/demo-guide.md) explains the forecast, historical evidence and later outcome, with exact navigation and commands. The two-person rehearsal remains in joint sign-off below.
+- [x] **Prepare the lab presentation and fallback**. Created an [11-slide deck](docs/presentation/MerchantRiskEngine_ML_Lab.pptx), [Markdown outline with speaker notes and viva preparation](docs/presentation.md), and [screenshots](docs/presentation/screenshots/) covering both overview budgets and both seller cases. The deck covers the problem, data, target, model, evaluation, demo and limitations. Member 1's peer review remains in joint sign-off below.
+- [x] **Check local presentation setup**. Started the dashboard on this machine, inspected 1440×1000 and 1366×768 layouts, exercised filters, tabs and drill-down modes, and verified missing-input recovery in isolated app copies. See the [verification record](docs/member2-validation.md) for scope. Actual classroom projection remains in joint sign-off below.
 
 ## Handoff and joint sign-off
 
-1. **Member 1 → Member 2** — Share the evaluation commit, run commands, exact results and the model and queue from a single run.
-2. **Member 2 → Member 1** — Share the presentation outline and checked demo sequence. Flag any differences between the dashboard, CLI and reported numbers.
-3. **Both** — Verify the project from a clean checkout, run the tests and rehearse once. Member 1 presents the data, model and evaluation. Member 2 presents the dashboard, seller examples and review workflow.
+- [x] **Member 1 → Member 2** — Frozen evaluation source, commands, split counts and exact results are documented in [results](docs/results.md#frozen-presentation-run-2026-11-27). Local artifacts used by the dashboard are identified in the [verification record](docs/member2-validation.md#artifact-identity).
+- [x] **Member 2 → Member 1** — Prepared the [presentation](docs/presentation.md) and [checked demo sequence](docs/demo-guide.md). Dashboard, CLI and queue values agree for both cases. Refreshed the README's confirmed-alert score to the current local 36.5%.
+- [ ] **Member 1 peer review** — Review the presentation's model explanation, limitations and numbers against the frozen run.
+- [ ] **Both, rehearsal** — Verify the project from a clean checkout, run the tests and rehearse once. Member 1 presents data, modelling and evaluation. Member 2 presents the dashboard, seller examples and review workflow.
+- [ ] **Both, classroom check** — Confirm projector readability and the slide deck in the chosen presentation software on the evaluation setup.
 
-Use separate branches for concurrent work. Commit source code and Markdown to GitHub. Keep raw Olist files and generated artifacts local.
+Use separate branches for concurrent work. Commit source code, Markdown and the presentation deck/screenshots to GitHub so both members can use the demo fallback. Keep raw Olist files, model artifacts and temporary build outputs local.
 
 ## Optional after the demo is ready
 
