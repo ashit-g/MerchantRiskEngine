@@ -16,7 +16,7 @@ The presentation service failed before authoring the deck, so the delivered deck
 
 | Check | Result |
 | --- | --- |
-| README dashboard installation | `python -m pip install -r requirements-dashboard.txt` succeeded with the existing pinned dependencies |
+| Dashboard installation | The pinned dashboard dependencies installed successfully during verification. The current install command is in the [README](../README.md#run-the-streamlit-dashboard). |
 | Dependency consistency | `python -m pip check` passed |
 | Existing unit tests | Seven passed |
 | Clean local checkout | Commit `a59a719f56bc8a834fda5509c70ac6aece073b43` passed all seven tests and the dashboard verifier in a fresh local clone, using the existing Python environment and locally supplied Olist files/model artifacts |

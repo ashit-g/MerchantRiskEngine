@@ -38,7 +38,7 @@ This compares model variants across five development months and writes `artifact
 From the repository root with the virtual environment active:
 
 ```sh
-python -m pip install -r requirements-dashboard.txt
+python -m pip install -r requirements.txt
 python -m merchant_risk train
 python -m streamlit run dashboard.py --server.address 127.0.0.1
 ```

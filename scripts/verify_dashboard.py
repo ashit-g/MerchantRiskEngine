@@ -1,7 +1,7 @@
 """Verify the lab dashboard against existing local evaluation artifacts.
 
 Run ``python -m scripts.verify_dashboard`` from the repository root after
-installing requirements-dashboard.txt and training once. This checks the saved
+installing requirements.txt and training once. This checks the saved
 run without retraining or changing it.
 """
 

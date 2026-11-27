@@ -7,7 +7,7 @@ Run these commands from the repository root using Python 3.10–3.12. The [data 
 ```sh
 python3 -m venv .venv
 source .venv/bin/activate
-python -m pip install -r requirements-dashboard.txt
+python -m pip install -r requirements.txt
 python -m merchant_risk train
 python -m unittest discover -s tests -v
 python -m scripts.verify_dashboard
@@ -70,8 +70,6 @@ python -m merchant_risk score --seller-id 2c9e548be18521d1c43cde1c582c6de8 --as-
 
 Use the [local slide deck](presentation/MerchantRiskEngine_ML_Lab.pptx) and the following screenshots when the dashboard is unavailable. The slides include speaker notes. The [Markdown presentation](presentation.md) is editable in the repository.
 
-- [Archived evaluation capture at 10%](presentation/screenshots/overview-10-percent.png)
-- [Archived evaluation capture at 25%](presentation/screenshots/overview-25-percent.png)
 - [Confirmed alert](presentation/screenshots/seller-confirmed-alert.png)
 - [False alarm](presentation/screenshots/seller-false-alarm.png)
 - [Score drivers](presentation/screenshots/seller-score-drivers.png)
