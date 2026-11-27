@@ -68,3 +68,35 @@ The [demo guide](docs/demo-guide.md) contains the checked walkthrough and setup 
 - [Initial results](docs/results.md) records the first validation and held-out evaluation.
 - [Two-person task plan](TASKS.md) assigns the remaining evaluation and dashboard work.
 - Code lives in `merchant_risk/`. Raw data and locally generated artifacts are ignored by Git.
+
+## Deploy the historical demo on Streamlit Community Cloud
+
+In [Streamlit Community Cloud](https://share.streamlit.io/), connect GitHub
+and choose **Create app**. Use these settings.
+
+| Setting | Value |
+| --- | --- |
+| Repository | `ashit-g/MerchantRiskEngine` |
+| Branch | `main` |
+| Main file path | `dashboard.py` |
+| Python version in Advanced settings | 3.12 |
+
+The app opens the historical snapshot in `demo/` when a complete local
+dataset, trained model and matching queue are unavailable. Streamlit Cloud
+can run from the saved snapshot after installing `requirements.txt`.
+To refresh the hosted demo, regenerate the model and queue together and
+update the snapshot files.
+
+To smoke-test the deployed app, select **June 2018**, keep **All actions**
+and search for merchant `de23c3b98a88`. The saved run should display a
+36.5% forecast and recommend **Investigate category**. Open the delivery
+evidence tabs, then save and download a test review decision.
+
+### Demo data attribution
+
+The CSVs under `demo/olist/` come from the
+[Brazilian E-Commerce Public Dataset by Olist](https://www.kaggle.com/datasets/olistbr/brazilian-ecommerce),
+released by Olist under [CC BY-NC-SA 4.0](https://creativecommons.org/licenses/by-nc-sa/4.0/).
+The demo data retains only the columns read by the dashboard. The reviews
+CSV contains order and review IDs, ratings and answer timestamps. The data
+subset is distributed under the original licence for this non-commercial lab demo.

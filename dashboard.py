@@ -17,6 +17,7 @@ ROOT = Path(__file__).resolve().parent
 DATA_DIR = ROOT / "data" / "olist"
 MODEL_PATH = ROOT / "artifacts" / "model.joblib"
 QUEUE_PATH = ROOT / "artifacts" / "test_scores.csv"
+DEMO_DIR = ROOT / "demo"
 TIERS = ("Escalate for operations review", "Investigate category", "Monitor")
 TIER_LABELS = dict(zip(TIERS, ("Escalate", "Investigate", "Monitor")))
 TEAL = "#00796F"
@@ -60,17 +61,17 @@ def load_queue(path: Path, modified: int) -> pd.DataFrame:
 
 
 @st.cache_resource(show_spinner=False)
-def load_olist(data_modified: tuple) -> tuple[pd.DataFrame, pd.DataFrame]:
+def load_olist(data_dir: Path, data_modified: tuple) -> tuple[pd.DataFrame, pd.DataFrame]:
     # The dataframes are shared across sessions and used as read-only inputs.
-    return read_olist(DATA_DIR)
+    return read_olist(data_dir)
 
 
 @st.cache_data(show_spinner=False, max_entries=128)
 def load_seller_detail(
-    seller_id: str, cutoff: pd.Timestamp, group_by: str, model_modified: int,
+    seller_id: str, cutoff: pd.Timestamp, group_by: str, model_path: Path, model_modified: int,
     data_modified: tuple, _orders: pd.DataFrame, _reviews: pd.DataFrame,
 ) -> dict:
-    return score_seller(_orders, _reviews, MODEL_PATH, seller_id, cutoff, group_by)
+    return score_seller(_orders, _reviews, model_path, seller_id, cutoff, group_by)
 
 
 def month_label(month: str) -> str:
@@ -166,15 +167,25 @@ def draw_drivers(detail: dict) -> None:
 def show_seller_explorer() -> None:
     st.header("Merchant review")
     st.caption("Historical Olist data · Forecasts use information available at the scoring date.")
-    data_paths = [DATA_DIR / name for name in REQUIRED_FILES.values()]
-    missing = [path.name for path in [*data_paths, MODEL_PATH, QUEUE_PATH] if not path.is_file()]
+    data_dir, model_path, queue_path = DATA_DIR, MODEL_PATH, QUEUE_PATH
+    data_paths = [data_dir / name for name in REQUIRED_FILES.values()]
+    missing = [path.name for path in [*data_paths, model_path, queue_path] if not path.is_file()]
+    if missing:
+        demo_data = DEMO_DIR / "olist"
+        demo_model = DEMO_DIR / "model.joblib"
+        demo_queue = DEMO_DIR / "test_scores.csv"
+        demo_paths = [demo_data / name for name in REQUIRED_FILES.values()]
+        if all(path.is_file() for path in [*demo_paths, demo_model, demo_queue]):
+            data_dir, model_path, queue_path = demo_data, demo_model, demo_queue
+            data_paths = demo_paths
+            missing = []
     if missing:
         st.warning(f"Missing local inputs: {', '.join(missing)}.")
         st.write("Extract Olist into `data/olist/` and generate the model and review queue from the repository root.")
         st.code("python -m merchant_risk train", language="bash")
         st.stop()
 
-    queue = load_queue(QUEUE_PATH, QUEUE_PATH.stat().st_mtime_ns)
+    queue = load_queue(queue_path, queue_path.stat().st_mtime_ns)
     if queue.empty:
         st.warning("The held-out seller queue is empty. Run training again to regenerate it.")
         st.stop()
@@ -217,8 +228,8 @@ def show_seller_explorer() -> None:
                 },
             )
 
-    optional = DATA_DIR / "product_category_name_translation.csv"
-    data_modified = tuple((path.name, path.stat().st_mtime_ns) for path in [*data_paths, optional] if path.is_file())
+    optional = data_dir / "product_category_name_translation.csv"
+    data_modified = tuple((path, path.stat().st_mtime_ns) for path in [*data_paths, optional] if path.is_file())
     with detail_col:
         with st.container(border=True, key="merchant_profile"):
             st.subheader("Seller profile")
@@ -226,9 +237,10 @@ def show_seller_explorer() -> None:
             st.caption(f"{month_label(target_month)} forecast · Scored {cutoff:%d %b %Y}")
             try:
                 with st.spinner("Loading seller profile…"):
-                    orders, reviews = load_olist(data_modified)
+                    orders, reviews = load_olist(data_dir, data_modified)
                     detail = load_seller_detail(
-                        seller_id, cutoff, "category", MODEL_PATH.stat().st_mtime_ns, data_modified, orders, reviews,
+                        seller_id, cutoff, "category", model_path, model_path.stat().st_mtime_ns,
+                        data_modified, orders, reviews,
                     )
             except (ValueError, FileNotFoundError) as error:
                 st.warning(str(error))
@@ -281,7 +293,8 @@ def show_seller_explorer() -> None:
                 breakdown = detail
                 if group_by == "product_id":
                     breakdown = load_seller_detail(
-                        seller_id, cutoff, group_by, MODEL_PATH.stat().st_mtime_ns, data_modified, orders, reviews,
+                        seller_id, cutoff, group_by, model_path, model_path.stat().st_mtime_ns,
+                        data_modified, orders, reviews,
                     )
                 draw_drilldown(breakdown, group_by)
             with reasons_tab:
