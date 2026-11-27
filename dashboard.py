@@ -255,8 +255,8 @@ def show_lab_overview() -> None:
 
 
 def show_seller_explorer() -> None:
-    st.header("Seller explorer")
-    st.caption("Choose a historical month and follow a seller from the review queue to their delivery evidence.")
+    st.header("Merchant review")
+    st.caption("Choose a forecast month, then search the queue by merchant ID. The queue covers eligible sellers in the historical Olist evaluation.")
     data_paths = [DATA_DIR / name for name in REQUIRED_FILES.values()]
     missing = [path.name for path in [*data_paths, MODEL_PATH, QUEUE_PATH] if not path.is_file()]
     if missing:
@@ -295,7 +295,7 @@ def show_seller_explorer() -> None:
             st.subheader("Seller review queue")
             st.caption(f"{len(visible):,} sellers · highest forecast risk first")
             seller_id = st.selectbox(
-                "Inspect seller", visible["seller_id"].tolist(), format_func=lambda value: value[:12],
+                "Find merchant by ID", visible["seller_id"].tolist(),
             )
             st.markdown("[View selected seller](#seller-profile)")
             queue_table = visible[["seller_id", "risk_score", "review_action"]].copy()
@@ -349,11 +349,20 @@ def show_seller_explorer() -> None:
                 f"Forecast for {month_label(target_month)}: chance that at least {LATE_RATE_PERCENT}% "
                 "of eligible deliveries will arrive late."
             )
-            observed_rate = selected["target_late_deliveries"] / selected["target_deliveries"]
-            st.caption(
-                f"Observed later in {month_label(target_month)} · {selected['target_late_deliveries']} of "
-                f"{selected['target_deliveries']} eligible deliveries arrived late ({observed_rate:.1%})."
-            )
+            next_step = {
+                "Monitor": "Review the delivery trend at the next monthly check.",
+                "Investigate category": "Inspect orders due next month and verify dispatch dates for outstanding shipments.",
+                "Escalate for operations review": "Ask the fulfilment team to verify outstanding shipments and carrier handoffs.",
+            }[detail["review_action"]]
+            evidence = f"{late} of {deliveries} deliveries arrived late in the past 30 days."
+            if late:
+                leading = max(history, key=lambda row: row["late_deliveries"])
+                label = category_label(leading[group_by]) if group_by == "category" else leading[group_by]
+                evidence += f" {label} accounted for {leading['late_deliveries']} of those {late} delays."
+            elif not deliveries:
+                evidence = "There were no completed deliveries with usable dates in the past 30 days."
+            st.write(evidence)
+            st.info(next_step)
 
             trend_tab, product_tab, reasons_tab = st.tabs(["Delivery trend", "Product breakdown", "Score drivers"])
             with trend_tab:
@@ -366,22 +375,54 @@ def show_seller_explorer() -> None:
                 st.caption("Score difference when each seller value is compared with its training median, one feature at a time.")
                 draw_drivers(detail)
 
+            st.subheader("Review decision")
+            case_key = (seller_id, target_month)
+            decisions = st.session_state.setdefault("merchant_decisions", {})
+            saved = decisions.get(case_key, {})
+            with st.form(f"decision_{seller_id}_{target_month}"):
+                choices = ("Monitor", "Investigate category", "Escalate for operations review")
+                action = st.selectbox("Your decision", choices, index=choices.index(
+                    saved.get("decision", detail["review_action"])
+                ))
+                note = st.text_area("Reviewer notes", value=saved.get("notes", ""))
+                if st.form_submit_button("Save decision for this session"):
+                    decisions[case_key] = {"decision": action, "notes": note}
+            if case_key in decisions:
+                record = decisions[case_key]
+                st.success(f"Saved for this session · {record['decision']}")
+                brief = {
+                    "merchant_id": seller_id, "score_date": str(cutoff.date()),
+                    "forecast_month": target_month, "risk_score": detail["risk_score"],
+                    "model_recommendation": detail["review_action"], "recent_evidence": evidence,
+                    **record,
+                }
+                st.download_button("Download review record", json.dumps(brief, indent=2),
+                                   f"review-{seller_id}-{target_month}.json", "application/json")
+            with st.expander("Historical follow-up · observed after scoring"):
+                observed_rate = selected["target_late_deliveries"] / selected["target_deliveries"]
+                st.caption(
+                    f"Observed later in {month_label(target_month)} · {selected['target_late_deliveries']} of "
+                    f"{selected['target_deliveries']} eligible deliveries arrived late ({observed_rate:.1%})."
+                )
+
+
+
 
 def main() -> None:
     st.set_page_config(page_title="MerchantRiskEngine", layout="wide")
     st.html(ROOT / "dashboard.css")
     st.html("""
         <header class="lab-hero">
-          <p class="lab-kicker">UML501 Machine Learning Lab · Team Casevocate</p>
+          <p class="lab-kicker">Marketplace operations</p>
           <h1>MerchantRiskEngine</h1>
-          <p>Forecast late-delivery risk with Olist marketplace data and investigate where delays are concentrated.</p>
+          <p>Review delivery risk, investigate recent delays and record a decision for each merchant.</p>
         </header>
     """)
     view = st.radio(
-        "Dashboard view", ("Lab overview", "Seller explorer"), horizontal=True,
+        "Dashboard view", ("Merchant review", "Model evaluation"), horizontal=True,
         label_visibility="collapsed", key="lab_navigation",
     )
-    if view == "Lab overview":
+    if view == "Model evaluation":
         show_lab_overview()
     else:
         show_seller_explorer()

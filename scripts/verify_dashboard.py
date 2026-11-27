@@ -37,6 +37,8 @@ def main() -> None:
     assert int(queue["high_late_rate"].sum()) == report["splits"]["test"]["positives"]
     app = AppTest.from_file(str(ROOT / "dashboard.py"), default_timeout=45).run()
     check_app(app)
+    assert app.radio[0].value == "Merchant review"
+    app.radio[0].set_value("Model evaluation").run()
     assert [metric.value for metric in app.metric] == [
         f"{len(queue):,}", str(int(queue["high_late_rate"].sum())),
         f"{report['held_out_test']['selected_model']['average_precision']:.3f}",
@@ -66,7 +68,7 @@ def main() -> None:
         assert table.iloc[0]["Caught"] == selected["positives_captured"]
         budget_checks[budget] = pooled
 
-    app.radio[0].set_value("Seller explorer").run()
+    app.radio[0].set_value("Merchant review").run()
     check_app(app)
     demo_details = {}
     for name, seller_id in DEMO_SELLERS.items():
@@ -99,6 +101,18 @@ def main() -> None:
             "observed_label": int(row["high_late_rate"]),
         }
 
+    app.text_area[0].set_value("Verify carrier handoff")
+    app.selectbox[3].set_value("Monitor")
+    app.button[0].click().run()
+    saved_case = (DEMO_SELLERS["false_alarm"], "2018-06")
+    assert app.session_state["merchant_decisions"][saved_case] == {
+        "decision": "Monitor", "notes": "Verify carrier handoff",
+    }
+    app.selectbox[2].set_value(DEMO_SELLERS["confirmed_alert"]).run()
+    assert app.text_area[0].value == ""
+    app.selectbox[2].set_value(DEMO_SELLERS["false_alarm"]).run()
+    assert app.text_area[0].value == "Verify carrier handoff"
+
     filter_checks = []
     for month in sorted(queue["target_month"].unique()):
         app.selectbox[0].set_value(month).run()
@@ -118,8 +132,9 @@ def main() -> None:
             shutil.copy2(ROOT / name, isolated / name)
         missing = AppTest.from_file(str(isolated / "dashboard.py")).run()
         check_app(missing)
+        missing.radio[0].set_value("Model evaluation").run()
         assert "python -m merchant_risk train" in missing.warning[0].value
-        missing.radio[0].set_value("Seller explorer").run()
+        missing.radio[0].set_value("Merchant review").run()
         check_app(missing)
         assert "Missing local inputs" in missing.warning[0].value
         assert missing.code[0].value == "python -m merchant_risk train"

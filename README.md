@@ -45,7 +45,9 @@ python -m streamlit run dashboard.py --server.address 127.0.0.1
 
 Open [the local dashboard](http://localhost:8501). If you already have a model and score export from the same training run, you can reuse them.
 
-Start with **Lab overview** to explain the target, dataset split and matched-budget evaluation. Switch between 10% and 25% review budgets to show how the number of flagged cases changes. Then open **Seller explorer**, choose a forecast month and review tier, and inspect a seller from the ranked queue. The profile separates the forecast, delivery history before scoring and the outcome observed later. The **Delivery trend** and **Product breakdown** tabs cover deliveries observed by the scoring date. **Score drivers** shows how the forecast changes when individual inputs are replaced with their training medians.
+The dashboard opens in **Merchant review**. Select a month and search by full or partial merchant ID. Inspect the suggested follow-up, choose your own decision and save notes for that merchant and month. Download the JSON record to retain it after the browser session ends. Expand the historical outcome after making your decision.
+
+For the lab presentation, open **Model evaluation** to explain the target, dataset split and matched-budget evaluation. Switch between 10% and 25% review budgets to show how the number of flagged cases changes. Then open **Merchant review**, choose a forecast month and review tier, and inspect a seller from the ranked queue. The profile separates the forecast, delivery history before scoring and the outcome observed later. The **Delivery trend** and **Product breakdown** tabs cover deliveries observed by the scoring date. **Score drivers** shows how the forecast changes when individual inputs are replaced with their training medians.
 
 The review queue uses the held-out evaluation export. It includes sellers with both sufficient historical activity and a mature outcome label. Forecasts use the saved model and information available at the scoring date. The dashboard reports a warning if the model and queue need to be regenerated together.
 
