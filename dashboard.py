@@ -17,7 +17,6 @@ ROOT = Path(__file__).resolve().parent
 DATA_DIR = ROOT / "data" / "olist"
 MODEL_PATH = ROOT / "artifacts" / "model.joblib"
 QUEUE_PATH = ROOT / "artifacts" / "test_scores.csv"
-METRICS_PATH = ROOT / "artifacts" / "metrics.json"
 TIERS = ("Escalate for operations review", "Investigate category", "Monitor")
 TIER_LABELS = dict(zip(TIERS, ("Escalate", "Investigate", "Monitor")))
 TEAL = "#00796F"
@@ -162,96 +161,6 @@ def draw_drivers(detail: dict) -> None:
             "Score change": f"{comparison['score_change_vs_median'] * 100:+.1f} pp",
         })
     st.dataframe(rows, hide_index=True, width="stretch")
-
-
-RANKING_LABELS = {
-    "selected_model": "Updated model",
-    "previous_random_forest": "Original random forest",
-    "trailing_late_rate": "Late-rate rule",
-}
-
-
-@st.cache_data(show_spinner=False)
-def load_metrics(path: Path, modified: int) -> dict:
-    return json.loads(path.read_text(encoding="utf-8"))
-
-
-def draw_budget_chart(pooled: dict) -> None:
-    rankings = [key for key in RANKING_LABELS if key in pooled]
-    labels = [RANKING_LABELS[key] for key in rankings]
-    values = [pooled[key]["positives_captured"] for key in rankings]
-    chart = go.Figure(go.Bar(
-        x=values[::-1], y=labels[::-1], orientation="h", text=values[::-1], textposition="outside",
-        cliponaxis=False, marker_color=[TEAL, "#65869a", "#9aaeb9"][:len(values)][::-1],
-        hovertemplate="%{y}<br>%{x} high-risk cases caught<extra></extra>",
-    ))
-    chart.update_layout(height=220, margin={"l": 2, "r": 30, "t": 8, "b": 35}, bargap=.42)
-    chart.update_xaxes(title_text="High-risk seller-months caught", rangemode="tozero", gridcolor=GRID, dtick=5)
-    chart.update_yaxes(automargin=True)
-    st.plotly_chart(chart, width="stretch", config={"displayModeBar": False})
-
-
-def show_lab_overview() -> None:
-    st.header("Model performance")
-    st.write(
-        f"At each month-end, the model estimates whether at least **{LATE_RATE_PERCENT}%** of a seller’s eligible "
-        "deliveries will arrive late in the following promised-delivery month."
-    )
-    if not METRICS_PATH.is_file():
-        st.warning("Generate the evaluation report with `python -m merchant_risk train`.")
-        return
-    report = load_metrics(METRICS_PATH, METRICS_PATH.stat().st_mtime_ns)
-    test = report["splits"]["test"]
-    ap = report["held_out_test"]["selected_model"]["average_precision"]
-    rule_ap = report["held_out_test"]["trailing_late_rate"]["average_precision"]
-    summaries = st.columns(3)
-    summaries[0].metric("Test seller-months", f"{test['rows']:,}", border=True)
-    summaries[1].metric("High-risk cases", f"{test['positives']:,}", border=True)
-    summaries[2].metric("Average precision", f"{ap:.3f}", f"{ap - rule_ap:+.3f} vs late-rate rule", border=True)
-
-    with st.container(border=True):
-        st.subheader("How many alerts are worth reviewing?")
-        st.caption("Each method gets the same number of review slots in each test month.")
-        budgets = report["matched_review_budgets"]
-        budget = st.radio("Monthly review budget", list(budgets), horizontal=True)
-        pooled = budgets[budget]["pooled"]
-        selected = pooled["selected_model"]
-        rule = pooled["trailing_late_rate"]
-        st.markdown(
-            f"With **{selected['reviewed']} reviews**, the model found **{selected['positives_captured']} of "
-            f"{pooled['positives']}** high-risk cases. The late-rate rule found **{rule['positives_captured']}**."
-        )
-        draw_budget_chart(pooled)
-        with st.expander("Exact results by ranking"):
-            rows = [
-                {"Ranking": label, "Caught": result["positives_captured"],
-                 "Precision": f"{result['precision']:.1%}", "Recall": f"{result['recall']:.1%}"}
-                for key, label in RANKING_LABELS.items() if (result := pooled.get(key))
-            ]
-            st.dataframe(rows, hide_index=True, width="stretch")
-
-    st.subheader("How we tested it")
-    model_name = report["selected_model"].split("/", 1)[0].replace("_", " ").capitalize()
-    with st.expander(f"What the {model_name.lower()} uses"):
-        st.markdown(
-            "- Recent orders, late deliveries, product mix, and customer reviews.\n"
-            "- Seller history and marketplace late-delivery rates for comparison.\n"
-            "- Orders already placed by month-end, including orders due in the next month."
-        )
-        st.caption("An outcome is counted only when at least five completed deliveries have usable dates.")
-    st.write(
-        "We trained on earlier Olist orders, selected the model on later months, and tested on a subsequent period. "
-        "The trailing 90-day late rate serves as the comparison rule."
-    )
-    st.dataframe([
-        {"Split": split.title(), "Delivery months": " to ".join(month_label(m) for m in values["target_months"]),
-         "Seller-months": values["rows"], "High-risk share": f"{values['positive_rate']:.1%}"}
-        for split, values in report["splits"].items()
-    ], hide_index=True, width="stretch")
-    st.caption(
-        "The holdout contains two months. These scores apply to completed deliveries with usable dates and "
-        "enough orders to evaluate the seller-month."
-    )
 
 
 def show_seller_explorer() -> None:
@@ -424,14 +333,7 @@ def main() -> None:
           </div>
         </header>
     """)
-    view = st.radio(
-        "Dashboard view", ("Merchant review", "Model evaluation"), horizontal=True,
-        label_visibility="collapsed", key="lab_navigation",
-    )
-    if view == "Model evaluation":
-        show_lab_overview()
-    else:
-        show_seller_explorer()
+    show_seller_explorer()
 
 
 if __name__ == "__main__":

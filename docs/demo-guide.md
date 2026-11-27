@@ -18,14 +18,12 @@ Open [the dashboard](http://localhost:8501). Existing matching artifacts can be 
 
 ## Two-minute walkthrough
 
-1. Open **Model evaluation**. Explain that one prediction concerns one seller's next promised-delivery month. A positive outcome means at least 20% late among at least five eligible completed deliveries.
-2. Keep **10%** selected. Point out 557 test seller-months, 35 positives and average precision 0.150. With 57 reviews, the updated model captures seven positives, the original forest four and the late-rate rule two.
-3. Select **25%**. There are 140 reviews. The updated model captures 14 positives, the original forest 14 and the rule ten. Each month's capacity is rounded up before the counts are pooled.
-4. Open **Merchant review**, select **June 2018** and keep **All actions**. Search **Find merchant by ID** for `de23c3b98a88`. Explain the confirmed alert, then show **Delivery trend**, **Product breakdown** and **Score drivers**. The **Category / Product** control is inside **Product breakdown**.
-5. Select `2c9e548be185`. Explain the false alarm below. Show how category counts support an operations investigation even when the future outcome differs from the forecast.
-6. Close with the short evaluation period, prevalence shift and completed-delivery coverage. Hand the technical questions to Member 1.
+1. Present the evaluation using the [slide notes](presentation.md#7-results-at-equal-review-capacity). Explain the seller-month target and compare the models at the same review capacity.
+2. Open the dashboard, select **June 2018** and keep **All actions**. Search **Find merchant by ID** for `de23c3b98a88`. Explain the confirmed alert, then show **Delivery trend**, **Product breakdown** and **Score drivers**. The **Category / Product** control is inside **Product breakdown**.
+3. Select `2c9e548be185` and explain the false alarm below. Show how category counts inform an operations review, then demonstrate recording a decision.
+4. Close with the short evaluation period, prevalence shift and completed-delivery coverage.
 
-The overview's review budget controls the retrospective ranking comparison. The seller explorer's review tiers use fixed validation-derived score thresholds. Tier counts can therefore differ from the selected review budget.
+The slides compare rankings at a fixed monthly review capacity. The dashboard assigns suggested actions using fixed validation-derived score thresholds, so its tier counts can differ from the slide budgets.
 
 ## Confirmed alert
 
@@ -72,8 +70,8 @@ python -m merchant_risk score --seller-id 2c9e548be18521d1c43cde1c582c6de8 --as-
 
 Use the [local slide deck](presentation/MerchantRiskEngine_ML_Lab.pptx) and the following screenshots when the dashboard is unavailable. The slides include speaker notes. The [Markdown presentation](presentation.md) is editable in the repository.
 
-- [Overview at 10%](presentation/screenshots/overview-10-percent.png)
-- [Overview at 25%](presentation/screenshots/overview-25-percent.png)
+- [Archived evaluation capture at 10%](presentation/screenshots/overview-10-percent.png)
+- [Archived evaluation capture at 25%](presentation/screenshots/overview-25-percent.png)
 - [Confirmed alert](presentation/screenshots/seller-confirmed-alert.png)
 - [False alarm](presentation/screenshots/seller-false-alarm.png)
 - [Score drivers](presentation/screenshots/seller-score-drivers.png)

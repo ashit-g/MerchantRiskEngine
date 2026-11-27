@@ -35,15 +35,6 @@ def main() -> None:
     queue = pd.read_csv(ROOT / "artifacts/test_scores.csv", dtype={"seller_id": str})
     assert len(queue) == report["splits"]["test"]["rows"]
     assert int(queue["high_late_rate"].sum()) == report["splits"]["test"]["positives"]
-    app = AppTest.from_file(str(ROOT / "dashboard.py"), default_timeout=45).run()
-    check_app(app)
-    assert app.radio[0].value == "Merchant review"
-    app.radio[0].set_value("Model evaluation").run()
-    assert [metric.value for metric in app.metric] == [
-        f"{len(queue):,}", str(int(queue["high_late_rate"].sum())),
-        f"{report['held_out_test']['selected_model']['average_precision']:.3f}",
-    ]
-
     budget_checks = {}
     for budget, values in report["matched_review_budgets"].items():
         pooled = values["pooled"]
@@ -55,21 +46,11 @@ def main() -> None:
                 reviews += len(selected)
                 caught += int(selected["high_late_rate"].sum())
             assert (reviews, caught) == (pooled[ranking]["reviewed"], pooled[ranking]["positives_captured"])
-        app.radio[1].set_value(budget).run()
-        check_app(app)
-        selected = pooled["selected_model"]
-        sentence = (
-            f"With **{selected['reviewed']} reviews**, the model found **{selected['positives_captured']} of "
-            f"{pooled['positives']}** high-risk cases. The late-rate rule found "
-            f"**{pooled['trailing_late_rate']['positives_captured']}**."
-        )
-        assert sentence in [item.value for item in app.markdown]
-        table = app.dataframe[0].value
-        assert table.iloc[0]["Caught"] == selected["positives_captured"]
         budget_checks[budget] = pooled
 
-    app.radio[0].set_value("Merchant review").run()
+    app = AppTest.from_file(str(ROOT / "dashboard.py"), default_timeout=45).run()
     check_app(app)
+    assert [radio.label for radio in app.radio] == ["Group recent deliveries by"]
     demo_details = {}
     for name, seller_id in DEMO_SELLERS.items():
         app.selectbox[0].set_value("2018-06").run()
@@ -90,10 +71,10 @@ def main() -> None:
         assert [tab.label for tab in app.tabs] == ["Delivery trend", "Product breakdown", "Score drivers"]
         history = detail["historical_drilldown"]
         assert int(metrics["30-day deliveries"]) == sum(item["deliveries"] for item in history)
-        app.radio[1].set_value("product_id").run()
+        app.radio[0].set_value("product_id").run()
         check_app(app)
         assert "Product ID" in app.dataframe[1].value.columns
-        app.radio[1].set_value("category").run()
+        app.radio[0].set_value("category").run()
         demo_details[name] = {
             **detail,
             "observed_deliveries": int(row["target_deliveries"]),
@@ -131,10 +112,6 @@ def main() -> None:
         for name in ("dashboard.py", "dashboard.css"):
             shutil.copy2(ROOT / name, isolated / name)
         missing = AppTest.from_file(str(isolated / "dashboard.py")).run()
-        check_app(missing)
-        missing.radio[0].set_value("Model evaluation").run()
-        assert "python -m merchant_risk train" in missing.warning[0].value
-        missing.radio[0].set_value("Merchant review").run()
         check_app(missing)
         assert "Missing local inputs" in missing.warning[0].value
         assert missing.code[0].value == "python -m merchant_risk train"

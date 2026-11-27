@@ -68,7 +68,15 @@ Compare logistic regression and random forest variants with a trailing 90-day la
 | 10% | 57 | 7 | 4 | 2 |
 | 25% | 140 | 14 | 14 | 10 |
 
-There are 35 positives across 557 historical test seller-months. Average precision is 0.150 for the updated forest, 0.092 for the original forest and 0.084 for the rule. Average precision summarises precision over the ranking as recall increases. At 10%, updated-model precision is 12.3% and recall is 20.0%. At 25%, precision is 10.0% and recall is 40.0%.
+**Slide takeaway.** The fulfilment-context random forest captured **7 of 35 positives in 57 reviews**, compared with **4** for the original forest and **2** for the trailing late-rate rule. At 140 reviews, both forests captured 14.
+
+| Ranking | Average precision | Precision at 10% | Recall at 10% | Precision at 25% | Recall at 25% |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| Fulfilment-context random forest | 0.150 | 12.3% | 20.0% | 10.0% | 40.0% |
+| Original random forest | 0.092 | 7.0% | 11.4% | 10.0% | 40.0% |
+| Trailing 90-day late-rate rule | 0.084 | 3.5% | 5.7% | 7.1% | 28.6% |
+
+**Speaker notes.** The June–July 2018 historical test contains 557 seller-months and 35 positives (6.3%). Average precision summarises precision across the ranking as recall increases. At the separate validation-derived action cutoff, the updated forest flagged 58 cases and captured 12 positives, yielding 20.7% precision and 34.3% recall. Brier score was 0.061. Report these cutoff results separately from the matched-capacity comparison.
 
 Review slots are rounded up separately each month. Fixed action tiers use validation-derived thresholds and have different review volumes. The [results](results.md) include development-fold results and the full frozen evaluation.
 
@@ -88,7 +96,7 @@ Seller `2c9e548be18521d1c43cde1c582c6de8`, same scoring date and target month. F
 
 **Member 2 · two minutes including the seller examples**
 
-Show Lab overview at both review budgets. Open Seller explorer for June, inspect the confirmed alert and false alarm, switch category/product grouping, and visit all three tabs. Clearly identify the scoring date, target month, historical window and later-observed outcome.
+Present the matched-budget comparison on slide 7. Open the merchant review dashboard for June, inspect the confirmed alert and false alarm, switch category/product grouping, and visit all three tabs. Clearly identify the scoring date, target month, historical window and later-observed outcome.
 
 The score drivers replace individual inputs with their training medians. Interpret them as model sensitivity. Product drill-down attributes observed late deliveries to categories or representative products. A human reviewer can use these signals to choose a follow-up investigation.
 

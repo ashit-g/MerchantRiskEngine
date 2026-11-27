@@ -47,11 +47,11 @@ Open [the local dashboard](http://localhost:8501). If you already have a model a
 
 The dashboard opens in **Merchant review**. Select a month and search by full or partial merchant ID. Inspect the suggested follow-up, choose your own decision and save notes for that merchant and month. Download the JSON record to retain it after the browser session ends. Expand the historical outcome after making your decision.
 
-For the lab presentation, open **Model evaluation** to explain the target, dataset split and matched-budget evaluation. Switch between 10% and 25% review budgets to show how the number of flagged cases changes. Then open **Merchant review**, choose a forecast month and review tier, and inspect a seller from the ranked queue. The profile separates the forecast, delivery history before scoring and the outcome observed later. The **Delivery trend** and **Product breakdown** tabs cover deliveries observed by the scoring date. **Score drivers** shows how the forecast changes when individual inputs are replaced with their training medians.
+For the lab presentation, use the [model evaluation slide notes](docs/presentation.md#7-results-at-equal-review-capacity). In the dashboard, the **Delivery trend** and **Product breakdown** tabs cover deliveries observed by the scoring date. **Score drivers** shows how the forecast changes when individual inputs are replaced with their training medians.
 
 The review queue uses the held-out evaluation export. It includes sellers with both sufficient historical activity and a mature outcome label. Forecasts use the saved model and information available at the scoring date. The dashboard reports a warning if the model and queue need to be regenerated together.
 
-For a short lab demo, start at the 10% review budget, switch to 25%, then open the June 2018 seller queue. In the verified local Olist run, seller `de23c3b98a88888289c6f5cc1209054a` shows a 36.5% forecast and two late deliveries among six eligible deliveries. The highest-ranked June seller, `2c9e548be18521d1c43cde1c582c6de8`, illustrates a false alarm with zero late deliveries among eight.
+For a short lab demo, present the two review budgets from the slide notes, then open the June 2018 seller queue. In the verified local Olist run, seller `de23c3b98a88888289c6f5cc1209054a` shows a 36.5% forecast and two late deliveries among six eligible deliveries. The highest-ranked June seller, `2c9e548be18521d1c43cde1c582c6de8`, illustrates a false alarm with zero late deliveries among eight.
 
 Verify the dashboard, both review budgets, seller forecasts against the CLI, filters and missing-input recovery using the saved run.
 
