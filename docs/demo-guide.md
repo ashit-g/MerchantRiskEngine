@@ -21,7 +21,7 @@ Open [the dashboard](http://localhost:8501). Existing matching artifacts can be 
 1. Open **Model evaluation**. Explain that one prediction concerns one seller's next promised-delivery month. A positive outcome means at least 20% late among at least five eligible completed deliveries.
 2. Keep **10%** selected. Point out 557 test seller-months, 35 positives and average precision 0.150. With 57 reviews, the updated model captures seven positives, the original forest four and the late-rate rule two.
 3. Select **25%**. There are 140 reviews. The updated model captures 14 positives, the original forest 14 and the rule ten. Each month's capacity is rounded up before the counts are pooled.
-4. Open **Merchant review**, **June 2018**, **All tiers**. Search the **Find merchant by ID** dropdown for `de23c3b98a88`. Explain the confirmed-alert example below. Show **Delivery trend**, **Product breakdown**, **Score drivers**, and the **Category / Product** control.
+4. Open **Merchant review**, select **June 2018** and keep **All actions**. Search **Find merchant by ID** for `de23c3b98a88`. Explain the confirmed alert, then show **Delivery trend**, **Product breakdown** and **Score drivers**. The **Category / Product** control is inside **Product breakdown**.
 5. Select `2c9e548be185`. Explain the false alarm below. Show how category counts support an operations investigation even when the future outcome differs from the forecast.
 6. Close with the short evaluation period, prevalence shift and completed-delivery coverage. Hand the technical questions to Member 1.
 

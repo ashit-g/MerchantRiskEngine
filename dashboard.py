@@ -256,7 +256,7 @@ def show_lab_overview() -> None:
 
 def show_seller_explorer() -> None:
     st.header("Merchant review")
-    st.caption("Choose a forecast month, then search the queue by merchant ID. The queue covers eligible sellers in the historical Olist evaluation.")
+    st.caption("Historical Olist data · Forecasts use information available at the scoring date.")
     data_paths = [DATA_DIR / name for name in REQUIRED_FILES.values()]
     missing = [path.name for path in [*data_paths, MODEL_PATH, QUEUE_PATH] if not path.is_file()]
     if missing:
@@ -270,34 +270,30 @@ def show_seller_explorer() -> None:
         st.warning("The held-out seller queue is empty. Run training again to regenerate it.")
         st.stop()
     months = sorted(queue["target_month"].unique())
-    month_col, tier_col = st.columns(2)
-    target_month = month_col.selectbox("Forecast month", months, format_func=month_label)
-    month_queue = queue[queue["target_month"].eq(target_month)]
-    cutoff = month_queue["score_date"].iloc[0]
-    tier_filter = tier_col.selectbox("Review tier", ("All tiers", *TIERS))
-
-    stats = st.columns(4)
-    stats[0].metric("Sellers evaluated", f"{len(month_queue):,}", border=True)
-    for metric, (tier, name) in zip(stats[1:], TIER_LABELS.items()):
-        metric.metric(name, f"{month_queue['review_action'].eq(tier).sum():,}", border=True)
-    st.caption(f"Scores use information available by {cutoff:%d %B %Y}. Counts include all review tiers for this month.")
-
-    visible = month_queue if tier_filter == "All tiers" else month_queue[month_queue["review_action"].eq(tier_filter)]
-    visible = visible.sort_values(["risk_score", "seller_id"], ascending=[False, True])
-    if visible.empty:
-        st.info("No sellers match this review tier for the selected month.")
-        st.stop()
-
     workflow = st.container(key="review_workflow")
-    queue_col, detail_col = workflow.columns([0.9, 1.3], gap="medium")
+    queue_col, detail_col = workflow.columns([0.8, 1.65], gap="medium")
     with queue_col:
-        with st.container(border=True):
-            st.subheader("Seller review queue")
-            st.caption(f"{len(visible):,} sellers · highest forecast risk first")
+        with st.container(border=True, key="merchant_queue"):
+            st.subheader("Review queue")
+            target_month = st.selectbox("Forecast month", months, format_func=month_label)
+            month_queue = queue[queue["target_month"].eq(target_month)]
+            cutoff = month_queue["score_date"].iloc[0]
+            tier_filter = st.selectbox(
+                "Suggested action", ("All tiers", *TIERS),
+                format_func=lambda tier: TIER_LABELS.get(tier, "All actions"),
+            )
+            visible = month_queue if tier_filter == "All tiers" else month_queue[
+                month_queue["review_action"].eq(tier_filter)
+            ]
+            visible = visible.sort_values(["risk_score", "seller_id"], ascending=[False, True])
+            if visible.empty:
+                st.info("No merchants match this action. Try All actions.")
+                st.stop()
             seller_id = st.selectbox(
                 "Find merchant by ID", visible["seller_id"].tolist(),
+                help="Type all or part of a merchant ID to search.",
             )
-            st.markdown("[View selected seller](#seller-profile)")
+            st.caption(f"{len(visible):,} of {len(month_queue):,} merchants · ranked by forecast risk")
             queue_table = visible[["seller_id", "risk_score", "review_action"]].copy()
             queue_table["seller_id"] = queue_table["seller_id"].str[:12]
             queue_table["review_action"] = queue_table["review_action"].map(TIER_LABELS)
@@ -315,18 +311,15 @@ def show_seller_explorer() -> None:
     optional = DATA_DIR / "product_category_name_translation.csv"
     data_modified = tuple((path.name, path.stat().st_mtime_ns) for path in [*data_paths, optional] if path.is_file())
     with detail_col:
-        with st.container(border=True):
+        with st.container(border=True, key="merchant_profile"):
             st.subheader("Seller profile")
             st.caption(seller_id)
-            labels = {"category": "Category", "product_id": "Product"}
-            group_by = st.radio(
-                "Group recent deliveries by", tuple(labels), format_func=labels.get, horizontal=True,
-            )
+            st.caption(f"{month_label(target_month)} forecast · Scored {cutoff:%d %b %Y}")
             try:
                 with st.spinner("Loading seller profile…"):
                     orders, reviews = load_olist(data_modified)
                     detail = load_seller_detail(
-                        seller_id, cutoff, group_by, MODEL_PATH.stat().st_mtime_ns, data_modified, orders, reviews,
+                        seller_id, cutoff, "category", MODEL_PATH.stat().st_mtime_ns, data_modified, orders, reviews,
                     )
             except (ValueError, FileNotFoundError) as error:
                 st.warning(str(error))
@@ -340,7 +333,8 @@ def show_seller_explorer() -> None:
             history = detail["historical_drilldown"]
             deliveries = sum(row["deliveries"] for row in history)
             late = sum(row["late_deliveries"] for row in history)
-            score_stat, late_stat, count_stat = st.columns(3)
+            with st.container(key="merchant_metrics"):
+                score_stat, late_stat, count_stat = st.columns(3)
             score_stat.metric("Next-month risk", f"{detail['risk_score']:.1%}")
             late_stat.metric("Past 30-day late rate", f"{late / deliveries:.1%}" if deliveries else "—")
             count_stat.metric("30-day deliveries", deliveries)
@@ -357,12 +351,13 @@ def show_seller_explorer() -> None:
             evidence = f"{late} of {deliveries} deliveries arrived late in the past 30 days."
             if late:
                 leading = max(history, key=lambda row: row["late_deliveries"])
-                label = category_label(leading[group_by]) if group_by == "category" else leading[group_by]
+                label = category_label(leading["category"])
                 evidence += f" {label} accounted for {leading['late_deliveries']} of those {late} delays."
             elif not deliveries:
                 evidence = "There were no completed deliveries with usable dates in the past 30 days."
             st.write(evidence)
             st.info(next_step)
+            st.markdown("[Record a decision](#review-decision)")
 
             trend_tab, product_tab, reasons_tab = st.tabs(["Delivery trend", "Product breakdown", "Score drivers"])
             with trend_tab:
@@ -370,7 +365,16 @@ def show_seller_explorer() -> None:
                 draw_delivery_trend(orders, seller_id, cutoff)
             with product_tab:
                 st.caption("Completed deliveries in the 30 days ending on the scoring date.")
-                draw_drilldown(detail, group_by)
+                labels = {"category": "Category", "product_id": "Product"}
+                group_by = st.radio(
+                    "Group recent deliveries by", tuple(labels), format_func=labels.get, horizontal=True,
+                )
+                breakdown = detail
+                if group_by == "product_id":
+                    breakdown = load_seller_detail(
+                        seller_id, cutoff, group_by, MODEL_PATH.stat().st_mtime_ns, data_modified, orders, reviews,
+                    )
+                draw_drilldown(breakdown, group_by)
             with reasons_tab:
                 st.caption("Score difference when each seller value is compared with its training median, one feature at a time.")
                 draw_drivers(detail)
@@ -385,7 +389,7 @@ def show_seller_explorer() -> None:
                     saved.get("decision", detail["review_action"])
                 ))
                 note = st.text_area("Reviewer notes", value=saved.get("notes", ""))
-                if st.form_submit_button("Save decision for this session"):
+                if st.form_submit_button("Save decision for this session", type="primary"):
                     decisions[case_key] = {"decision": action, "notes": note}
             if case_key in decisions:
                 record = decisions[case_key]
@@ -412,10 +416,12 @@ def main() -> None:
     st.set_page_config(page_title="MerchantRiskEngine", layout="wide")
     st.html(ROOT / "dashboard.css")
     st.html("""
-        <header class="lab-hero">
-          <p class="lab-kicker">Marketplace operations</p>
-          <h1>MerchantRiskEngine</h1>
-          <p>Review delivery risk, investigate recent delays and record a decision for each merchant.</p>
+        <header class="workspace-header">
+          <span class="workspace-mark" aria-hidden="true">M</span>
+          <div>
+            <h1>Merchant Risk Engine</h1>
+            <p>Fulfilment operations</p>
+          </div>
         </header>
     """)
     view = st.radio(
