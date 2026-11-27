@@ -165,8 +165,6 @@ def draw_drivers(detail: dict) -> None:
 
 
 def show_seller_explorer() -> None:
-    st.header("Merchant review")
-    st.caption("Historical Olist data · Forecasts use information available at the scoring date.")
     data_dir, model_path, queue_path = DATA_DIR, MODEL_PATH, QUEUE_PATH
     data_paths = [data_dir / name for name in REQUIRED_FILES.values()]
     missing = [path.name for path in [*data_paths, model_path, queue_path] if not path.is_file()]
@@ -190,6 +188,13 @@ def show_seller_explorer() -> None:
         st.warning("The held-out seller queue is empty. Run training again to regenerate it.")
         st.stop()
     months = sorted(queue["target_month"].unique())
+    source_label = "Bundled demo" if queue_path.parent == DEMO_DIR else "Local evaluation"
+    st.html(f"""
+        <header class="workspace-header">
+          <div><p>Merchant Risk Engine</p><h1>Merchant review</h1></div>
+          <div class="workspace-source"><strong>{source_label}</strong><br>Historical Olist data</div>
+        </header>
+    """)
     workflow = st.container(key="review_workflow")
     queue_col, detail_col = workflow.columns([0.8, 1.65], gap="medium")
     with queue_col:
@@ -213,27 +218,29 @@ def show_seller_explorer() -> None:
                 "Find merchant by ID", visible["seller_id"].tolist(),
                 help="Type all or part of a merchant ID to search.",
             )
-            st.caption(f"{len(visible):,} of {len(month_queue):,} merchants · ranked by forecast risk")
+            rank = visible["seller_id"].tolist().index(seller_id) + 1
+            st.caption(f"Rank {rank:,} of {len(visible):,} in this selection · {len(month_queue):,} merchants this month")
             queue_table = visible[["seller_id", "risk_score", "review_action"]].copy()
             queue_table["seller_id"] = queue_table["seller_id"].str[:12]
             queue_table["review_action"] = queue_table["review_action"].map(TIER_LABELS)
-            st.dataframe(
-                queue_table, hide_index=True, height=310, width="stretch",
-                column_config={
-                    "seller_id": "Seller ID",
-                    "risk_score": st.column_config.ProgressColumn(
-                        "Forecast risk", min_value=0, max_value=1, format="percent",
-                    ),
-                    "review_action": "Review tier",
-                },
-            )
+            with st.expander("View ranked queue", expanded=False):
+                st.dataframe(
+                    queue_table, hide_index=True, height=310, width="stretch",
+                    column_config={
+                        "seller_id": "Seller ID",
+                        "risk_score": st.column_config.ProgressColumn(
+                            "Forecast risk", min_value=0, max_value=1, format="percent",
+                        ),
+                        "review_action": "Review tier",
+                    },
+                )
 
     optional = data_dir / "product_category_name_translation.csv"
     data_modified = tuple((path, path.stat().st_mtime_ns) for path in [*data_paths, optional] if path.is_file())
     with detail_col:
         with st.container(border=True, key="merchant_profile"):
             st.subheader("Seller profile")
-            st.caption(seller_id)
+            st.caption(f"Merchant `{seller_id}`")
             st.caption(f"{month_label(target_month)} forecast · Scored {cutoff:%d %b %Y}")
             try:
                 with st.spinner("Loading seller profile…"):
@@ -259,11 +266,7 @@ def show_seller_explorer() -> None:
             score_stat.metric("Next-month risk", f"{detail['risk_score']:.1%}")
             late_stat.metric("Past 30-day late rate", f"{late / deliveries:.1%}" if deliveries else "—")
             count_stat.metric("30-day deliveries", deliveries)
-            st.markdown(f"**Suggested action · {detail['review_action']}**")
-            st.caption(
-                f"Forecast for {month_label(target_month)}: chance that at least {LATE_RATE_PERCENT}% "
-                "of eligible deliveries will arrive late."
-            )
+            st.caption(f"Next-month risk is the chance that at least {LATE_RATE_PERCENT}% of eligible deliveries arrive late.")
             next_step = {
                 "Monitor": "Review the delivery trend at the next monthly check.",
                 "Investigate category": "Inspect orders due next month and verify dispatch dates for outstanding shipments.",
@@ -276,9 +279,11 @@ def show_seller_explorer() -> None:
                 evidence += f" {label} accounted for {leading['late_deliveries']} of those {late} delays."
             elif not deliveries:
                 evidence = "There were no completed deliveries with usable dates in the past 30 days."
+            with st.container(key="suggested_followup"):
+                st.markdown(f"**Suggested action · {detail['review_action']}**")
+                st.write(next_step)
+                st.markdown("[Record a decision](#review-decision)")
             st.write(evidence)
-            st.info(next_step)
-            st.markdown("[Record a decision](#review-decision)")
 
             trend_tab, product_tab, reasons_tab = st.tabs(["Delivery trend", "Product breakdown", "Score drivers"])
             with trend_tab:
@@ -337,15 +342,6 @@ def show_seller_explorer() -> None:
 def main() -> None:
     st.set_page_config(page_title="MerchantRiskEngine", layout="wide")
     st.html(ROOT / "dashboard.css")
-    st.html("""
-        <header class="workspace-header">
-          <span class="workspace-mark" aria-hidden="true">M</span>
-          <div>
-            <h1>Merchant Risk Engine</h1>
-            <p>Fulfilment operations</p>
-          </div>
-        </header>
-    """)
     show_seller_explorer()
 
 
