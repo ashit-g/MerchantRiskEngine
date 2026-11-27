@@ -29,8 +29,9 @@ The lab predicts whether at least 20% of a seller's eligible Olist deliveries wi
 
 - [x] **Member 1 → Member 2** — Frozen evaluation source, commands, split counts and exact results are documented in [results](docs/results.md#frozen-presentation-run-2026-11-27). Local artifacts used by the dashboard are identified in the [verification record](docs/member2-validation.md#artifact-identity).
 - [x] **Member 2 → Member 1** — Prepared the [presentation](docs/presentation.md) and [checked demo sequence](docs/demo-guide.md). Dashboard, CLI and queue values agree for both cases. Refreshed the README's confirmed-alert score to the current local 36.5%.
+- [x] **Clean-checkout software verification** — A fresh local clone of commit `a59a719` passed all seven tests and the dashboard verifier using the existing Python environment, local Olist inputs and matching training artifacts. See the [verification record](docs/member2-validation.md).
 - [ ] **Member 1 peer review** — Review the presentation's model explanation, limitations and numbers against the frozen run.
-- [ ] **Both, rehearsal** — Verify the project from a clean checkout, run the tests and rehearse once. Member 1 presents data, modelling and evaluation. Member 2 presents the dashboard, seller examples and review workflow.
+- [ ] **Both, rehearsal** — Rehearse the presentation once with the final artifacts. Member 1 presents data, modelling and evaluation. Member 2 presents the dashboard, seller examples and review workflow.
 - [ ] **Both, classroom check** — Confirm projector readability and the slide deck in the chosen presentation software on the evaluation setup.
 
 Use separate branches for concurrent work. Commit source code, Markdown and the presentation deck/screenshots to GitHub so both members can use the demo fallback. Keep raw Olist files, model artifacts and temporary build outputs local.

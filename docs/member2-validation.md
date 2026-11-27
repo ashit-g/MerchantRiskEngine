@@ -19,6 +19,7 @@ The presentation service failed before authoring the deck, so the delivered deck
 | README dashboard installation | `python -m pip install -r requirements-dashboard.txt` succeeded with the existing pinned dependencies |
 | Dependency consistency | `python -m pip check` passed |
 | Existing unit tests | Seven passed |
+| Clean local checkout | Commit `a59a719f56bc8a834fda5509c70ac6aece073b43` passed all seven tests and the dashboard verifier in a fresh local clone, using the existing Python environment and locally supplied Olist files/model artifacts |
 | Local server | Launched at `http://127.0.0.1:8501` |
 | Overview summary | 557 seller-months, 35 positives, average precision 0.150 |
 | 10% budget | 57 reviews, updated forest seven positives, original forest four, rule two |
@@ -33,8 +34,11 @@ The presentation service failed before authoring the deck, so the delivered deck
 | Missing inputs | Isolated app copies displayed the missing report/data/model recovery messages and training command |
 | Browser layout | Inspected at 1440×1000 and 1366×768, with no page-level horizontal overflow or Streamlit exceptions at 1366×768 |
 | Screenshot fallback | Saved and visually inspected both review budgets, both sellers and score drivers |
+| Documentation and deck | All relative documentation links resolve, and the deck contains 11 slides with 11 populated speaker-note parts |
 
 The browser checks used the installed Chrome browser in headless mode. At 1366×768, the page requires vertical scrolling to inspect the full seller profile and its evidence. Table text and long product IDs may require the table's horizontal scrollbar. The projector's physical readability still needs an in-room check.
+
+The clean-clone check supplied only the three artifacts produced by training. Dashboard verification also succeeds when the optional backtest report is absent.
 
 ## Verified seller cases
 
